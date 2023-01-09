@@ -2,9 +2,14 @@
   "name": "@liquid-labs/liq-projects",
   "version": "1.0.0-alpha.0",
   "description": "",
-  "main": "index.js",
+  "main": "dist/liq-projects.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "make",
+    "lint": "make lint",
+    "lint:fix": "make lint-fix",
+    "test": "make test"
+    "preversion": "npm test && make lint",
+    "postversion": "git push upstream v${npm_package_version}"
   },
   "keywords": [],
   "author": "Zane Rockenbaugh <zane@liquid-labs.com>",
@@ -18,6 +23,16 @@
   },
   "homepage": "https://github.com/Liquid-Labs/liq-projects#readme",
   "liq": {
-    "orgBase": "git@github.com:Liquid-Labs/Liquid-Labs.git"
+    "orgBase": "git@github.com:Liquid-Labs/Liquid-Labs.git",
+    "packageType": "node|server",
+    "labels": [
+      "plugin:liq-core",
+      "type:plugin:liq-core",
+      "implements:documentation"
+    ]
+  },
+  "devDependencies": {
+    "@liquid-labs/catalyst-scripts": "^1.0.0-alpha.57",
+    "walkdir": "^0.4.1"
   }
 }
