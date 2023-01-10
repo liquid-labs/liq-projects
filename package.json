@@ -7,7 +7,7 @@
     "build": "make",
     "lint": "make lint",
     "lint:fix": "make lint-fix",
-    "test": "make test"
+    "test": "make test",
     "preversion": "npm test && make lint",
     "postversion": "git push upstream v${npm_package_version}"
   },
