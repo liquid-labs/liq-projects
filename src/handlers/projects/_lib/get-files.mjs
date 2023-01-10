@@ -19,7 +19,6 @@ const getFiles = async ({
   if (noRecurse === true) depth = 1
 
   const dirents = await fs.readdir(dir, { withFileTypes: true })
-console.log(dirents)
 
   const files = await Promise.all(dirents.map((dirent) => {
     const res = fsPath.resolve(dir, dirent.name)
