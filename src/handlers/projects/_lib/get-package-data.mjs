@@ -2,24 +2,9 @@ import { existsSync } from 'node:fs'
 import * as fs from 'node:fs/promises'
 import * as fsPath from 'node:path'
 
-const getPackageData = async ({ currentOrgKey, packageDesignation, requireImplements }) => {
-	const [ orgKey, projectName ] = projectDesignation.split('/')
-  if (projectName === undefined) {
-    projectName = orgKey
-    orgKey = currentOrgKey
-  }
-  if (!orgKey) {
-    res
-      .status(422/* Unprocessable Entity*/)
-      .setHeader('content-type', 'text/terminal')
-      .send(`The organization key could not be determined. The project designation <code>${projectDesignation}<rst> appears to be a simple project name and neither is parameter <code>currentOrgKey<rst> set.
-
-Either specify a fully qualified project name or set <code>currentOrgKey<rst>.`)
-    return false
-  }
-  // else we have what looks like a FQ project name
+const getPackageData = async ({ localOrgKey, projectName, requireImplements }) => {
   const liqPlayground = process.env.LIQ_HOME || fsPath.join(process.env.HOME, '.liq', 'playground')
-  const projectPath = fsPath.join(liqPlayground, orgKey, projectName)
+  const projectPath = fsPath.join(liqPlayground, localOrgKey, projectName)
   const projectPkgPath = fsPath.join(projectPath, 'package.json')
   if (!existsSync(projectPkgPath)) {
     res
@@ -54,12 +39,11 @@ Either specify a fully qualified project name or set <code>currentOrgKey<rst>.`)
 	}
 
   return {
-  	fqnProjectName: orgKey + '/' + projectName,
-  	orgKey,
+  	fqnProjectName: localOrgKey + '/' + projectName,
   	packageSpec,
   	projectDesignation,
   	projectName,
-  	projectPath,
+  	projectPath
   }
 }
 

@@ -13,13 +13,8 @@ const help = {
 }
 
 const method = 'put'
-const path = [ 'projects', ':projectDesignation'/* simple name or FQN*/]
+const path = [ 'orgs', ':localOrgKey', 'projects', ':projectName']
 const parameters = [
-  {
-    name: 'currentOrgKey',
-    description: 'If set, then projects may be designated by their simple name. <code>currentOrgKey</rst> is treated as a valid org key. If a fully qualified project name is specified, then this parameter is ignored. The main use case for this parameter is to support a command line interface where the "current project" may be divined from the current working directory.',
-    advanced: true
-  },
   {
     name: 'ignoreDocumentationImplementation',
     isBoolean: true,
@@ -27,30 +22,38 @@ const parameters = [
   }
 ]
 
-const projectNameRe = new RegExp(`.+${fsPath.sep}([^${fsPath.sep}]+)${fsPath.sep}([^${fsPath.sep}]+)$`)
-
 const func = ({ app, model }) => {
-  app.commonPathResolvers['projectDesignation'] = {
-    optionsFetcher: async ({ model, currToken='' }) => {
+  app.commonPathResolvers['localOrgKey'] = {
+    optionsFetcher: async () => {
       // TODO: we really want to see the endpoint parameters so we can properly handle when 'currentOrgKey' is set
       // TODO: this is a good case for using the cache
       const liqPlayground = process.env.LIQ_HOME || fsPath.join(process.env.HOME, '.liq', 'playground')
-      const absDirs = await getFiles({ dir: liqPlayground, onlyDirs: true, depth: 2 })
-      return absDirs
-        ?.filter((d) => d.indexOf(fsPath.sep) !== -1)
-        ?.map((d) => d.replace(projectNameRe, '$1/$2'))
+      const absDirs = await getFiles({ dir: liqPlayground, ignoreDotFiles: true, onlyDirs: true, depth: 1 })
+      return absDirs?.map((d) => fsPath.basename(d))
+    },
+    bitReString: '(?:[a-z][a-z0-9-]*)?'
+  }
+
+  app.commonPathResolvers['projectName'] = {
+    optionsFetcher: async ({ localOrgKey }) => {
+      // TODO: we really want to see the endpoint parameters so we can properly handle when 'currentOrgKey' is set
+      // TODO: this is a good case for using the cache
+      const liqPlayground = process.env.LIQ_HOME || fsPath.join(process.env.HOME, '.liq', 'playground')
+      const orgDir = fsPath.join(liqPlayground, localOrgKey)
+      const absDirs = await getFiles({ dir: liqPlayground, ignoreDotFiles: true, onlyDirs: true, depth: 1 })
+      return absDirs?.map((d) => fsPath.basename(e))
     },
     bitReString: '(?:[a-z][a-z0-9-]*)?'
   }
   
   return async (req, res) => {
-    const { currentOrgKey, ignoreDocumentationImplementation, projectDesignation } = req.vars
+    const { localOrgKey, ignoreDocumentationImplementation, projectName } = req.vars
 
     const requireImplements = ignoreDocumentationImplementation === true
       ? []
       : [ 'implementation:documentation' ]
 
-    const pkgData = await getPackageData({ currentOrgKey, projectDesignation, requireImplements })
+    const pkgData = await getPackageData({ localOrgKey, projectName, requireImplements })
     if (pkgData === false) return // error results already sent
     // else, we are good to start generating documentation!
 
