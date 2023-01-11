@@ -52,7 +52,7 @@ const func = ({ app, model }) => async (req, res) => {
   await Promise.all(sourceFiles.map(async (file) => {
     const fileContents = await fs.readFile(file, { encoding: 'utf8' })
     const pkgRelPath = file.slice(pkgSrcLength)
-    const pkgRelDoc = pkgRelPath.slice(0, pkgRelPath.lastIndexOf('.')) + '.html'
+    const pkgRelDoc = pkgRelPath + '.html' // so we end up with file names like 'library.js.html'
     const docFilePath = fsPath.join(docPath, pkgRelDoc)
     const docDirPath = fsPath.dirname(docFilePath)
     if (dirs[docDirPath] === undefined) {
