@@ -1,9 +1,29 @@
 <html>
   <head>
     <title>get-files.test.js</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/lightfair.min.css">
+
+    <style>
+      body {
+        width: 100%;
+        text-align: center;
+      }
+
+      pre {
+        text-align: left;
+        display: inline-block;
+        max-width: 120em;
+        margin: 1em 1em;
+        padding: 1em 1em;
+        border-top: solid blue 1px;
+        border-right: solid blue 1px;
+        border-bottom: solid blue 1px;
+      }
+    </style>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/base16/google-light.min.css">
   </head>
   <body>
+    <pre><code>
 <span class="hljs-comment">/* global describe expect test */</span>
 
 <span class="hljs-keyword">import</span> { getFiles } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;../get-files&#x27;</span>
@@ -81,5 +101,6 @@
 			.<span class="hljs-title function_">toEqual</span>([ <span class="hljs-string">&#x27;b&#x27;</span>, <span class="hljs-string">&#x27;b/d&#x27;</span>, <span class="hljs-string">&#x27;c&#x27;</span> ].<span class="hljs-title function_">map</span>(<span class="hljs-function">(<span class="hljs-params">f</span>) =&gt;</span> dataRoot + <span class="hljs-string">&#x27;/&#x27;</span> + f))
 	})
 })
+    </code></pre>
   </body>
 </html>

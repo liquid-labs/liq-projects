@@ -1,9 +1,29 @@
 <html>
   <head>
     <title>document.js</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/lightfair.min.css">
+
+    <style>
+      body {
+        width: 100%;
+        text-align: center;
+      }
+
+      pre {
+        text-align: left;
+        display: inline-block;
+        max-width: 120em;
+        margin: 1em 1em;
+        padding: 1em 1em;
+        border-top: solid blue 1px;
+        border-right: solid blue 1px;
+        border-bottom: solid blue 1px;
+      }
+    </style>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/base16/google-light.min.css">
   </head>
   <body>
+    <pre><code>
 <span class="hljs-keyword">import</span> * <span class="hljs-keyword">as</span> fs <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;node:fs/promises&#x27;</span>
 <span class="hljs-keyword">import</span> * <span class="hljs-keyword">as</span> fsPath <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;node:path&#x27;</span>
 
@@ -89,10 +109,31 @@ hljs.<span class="hljs-title function_">registerLanguage</span>(<span class="hlj
   <span class="hljs-keyword">let</span> html = <span class="hljs-string">`&lt;html&gt;
   &lt;head&gt;
     &lt;title&gt;<span class="hljs-subst">${title}</span>&lt;/title&gt;
-    &lt;link rel=&quot;stylesheet&quot; href=&quot;https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/lightfair.min.css&quot;&gt;
+
+    &lt;style&gt;
+      body {
+        width: 100%;
+        text-align: center;
+      }
+
+      pre {
+        text-align: left;
+        display: inline-block;
+        max-width: 120em;
+        margin: 1em 1em;
+        padding: 1em 1em;
+        border-top: solid blue 1px;
+        border-right: solid blue 1px;
+        border-bottom: solid blue 1px;
+      }
+    &lt;/style&gt;
+
+    &lt;link rel=&quot;stylesheet&quot; href=&quot;https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/base16/google-light.min.css&quot;&gt;
   &lt;/head&gt;
   &lt;body&gt;
+    &lt;pre&gt;&lt;code&gt;
 <span class="hljs-subst">${hljs.highlight(rawContent, { language: fileType }).value}</span>
+    &lt;/code&gt;&lt;/pre&gt;
   &lt;/body&gt;
 &lt;/html&gt;`</span>
 
@@ -101,5 +142,6 @@ hljs.<span class="hljs-title function_">registerLanguage</span>(<span class="hlj
 
 <span class="hljs-keyword">export</span> { func, help, method, parameters, path }
 
+    </code></pre>
   </body>
 </html>

@@ -85,11 +85,19 @@ const htmlifySource = (rawContent, pkgRelPath) => {
     <title>${title}</title>
 
     <style>
-      pre > code {
-        margin: 5px 5px 5px 25px;
-        padding: 5px 5px 5px 0;
+      body {
+        width: 100%;
+        text-align: center;
+      }
+
+      pre {
+        text-align: left;
+        display: inline-block;
+        max-width: 120em;
+        margin: 1em 1em;
+        padding: 1em 1em;
         border-top: solid blue 1px;
-        border-left: solid blue 1px;
+        border-right: solid blue 1px;
         border-bottom: solid blue 1px;
       }
     </style>
