@@ -3,7 +3,7 @@ import * as fsPath from 'node:path'
 
 import hljs from 'highlight.js/lib/core';
 import javascript from 'highlight.js/lib/languages/javascript';
-
+import naturalSort from 'natural-sort'
 import walk from 'walkdir'
 
 import { getFiles } from './_lib/get-files'
@@ -38,7 +38,7 @@ const func = ({ app, model }) => async (req, res) => {
   if (pkgData === false) return // error results already sent
   // else, we are good to start generating documentation!
 
-  const { projectPath } = pkgData
+  const { projectFQN, projectPath } = pkgData
 
   const pkgSrc = fsPath.join(projectPath, 'src')
   const docPath = fsPath.join(projectPath, 'docs')
@@ -49,22 +49,48 @@ const func = ({ app, model }) => async (req, res) => {
 
   await fs.rm(docPath, { recursive: true })
 
+  const tocFiles = []
+
   await Promise.all(sourceFiles.map(async (file) => {
     const fileContents = await fs.readFile(file, { encoding: 'utf8' })
     const pkgRelPath = file.slice(pkgSrcLength)
     const pkgRelDoc = pkgRelPath + '.html' // so we end up with file names like 'library.js.html'
     const docFilePath = fsPath.join(docPath, pkgRelDoc)
     const docDirPath = fsPath.dirname(docFilePath)
+
+    tocFiles.push(pkgRelDoc)
+
     if (dirs[docDirPath] === undefined) {
       await fs.mkdir(docDirPath, { recursive: true })
       dirs[docDirPath] = true
     }
     
-
     const htmlifiedSource = htmlifySource(fileContents, pkgRelPath)
 
     return fs.writeFile(docFilePath, htmlifiedSource)
   }))
+
+  tocFiles.sort(naturalSort)
+
+  const indexPath = fsPath.join(docPath, 'index.html')
+  let tocContent = `<html>
+  <head>
+    <title>${projectFQN}</title>
+  </head>
+    <body>
+      <ul>`
+  for (const tocFile of tocFiles) {
+    tocContent += `
+        <li>
+          <a href=${tocFile}>${tocFile.slice(0, -5)}</a>
+        </li>`
+  }
+  tocContent += `
+      </ul>
+    </body>
+  </html>`
+
+  await fs.writeFile(indexPath, tocContent)
 
   res.setHeader('content-type', 'text/terminal').send(`Documented ${sourceFiles.length} source files.`)
 }

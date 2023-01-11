@@ -29,7 +29,7 @@
 
 <span class="hljs-keyword">import</span> hljs <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;highlight.js/lib/core&#x27;</span>;
 <span class="hljs-keyword">import</span> javascript <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;highlight.js/lib/languages/javascript&#x27;</span>;
-
+<span class="hljs-keyword">import</span> naturalSort <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;natural-sort&#x27;</span>
 <span class="hljs-keyword">import</span> walk <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;walkdir&#x27;</span>
 
 <span class="hljs-keyword">import</span> { getFiles } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;./_lib/get-files&#x27;</span>
@@ -64,7 +64,7 @@ hljs.<span class="hljs-title function_">registerLanguage</span>(<span class="hlj
   <span class="hljs-keyword">if</span> (pkgData === <span class="hljs-literal">false</span>) <span class="hljs-keyword">return</span> <span class="hljs-comment">// error results already sent</span>
   <span class="hljs-comment">// else, we are good to start generating documentation!</span>
 
-  <span class="hljs-keyword">const</span> { projectPath } = pkgData
+  <span class="hljs-keyword">const</span> { projectFQN, projectPath } = pkgData
 
   <span class="hljs-keyword">const</span> pkgSrc = fsPath.<span class="hljs-title function_">join</span>(projectPath, <span class="hljs-string">&#x27;src&#x27;</span>)
   <span class="hljs-keyword">const</span> docPath = fsPath.<span class="hljs-title function_">join</span>(projectPath, <span class="hljs-string">&#x27;docs&#x27;</span>)
@@ -75,22 +75,48 @@ hljs.<span class="hljs-title function_">registerLanguage</span>(<span class="hlj
 
   <span class="hljs-keyword">await</span> fs.<span class="hljs-title function_">rm</span>(docPath, { <span class="hljs-attr">recursive</span>: <span class="hljs-literal">true</span> })
 
+  <span class="hljs-keyword">const</span> tocFiles = []
+
   <span class="hljs-keyword">await</span> <span class="hljs-title class_">Promise</span>.<span class="hljs-title function_">all</span>(sourceFiles.<span class="hljs-title function_">map</span>(<span class="hljs-keyword">async</span> (file) =&gt; {
     <span class="hljs-keyword">const</span> fileContents = <span class="hljs-keyword">await</span> fs.<span class="hljs-title function_">readFile</span>(file, { <span class="hljs-attr">encoding</span>: <span class="hljs-string">&#x27;utf8&#x27;</span> })
     <span class="hljs-keyword">const</span> pkgRelPath = file.<span class="hljs-title function_">slice</span>(pkgSrcLength)
     <span class="hljs-keyword">const</span> pkgRelDoc = pkgRelPath + <span class="hljs-string">&#x27;.html&#x27;</span> <span class="hljs-comment">// so we end up with file names like &#x27;library.js.html&#x27;</span>
     <span class="hljs-keyword">const</span> docFilePath = fsPath.<span class="hljs-title function_">join</span>(docPath, pkgRelDoc)
     <span class="hljs-keyword">const</span> docDirPath = fsPath.<span class="hljs-title function_">dirname</span>(docFilePath)
+
+    tocFiles.<span class="hljs-title function_">push</span>(pkgRelDoc)
+
     <span class="hljs-keyword">if</span> (dirs[docDirPath] === <span class="hljs-literal">undefined</span>) {
       <span class="hljs-keyword">await</span> fs.<span class="hljs-title function_">mkdir</span>(docDirPath, { <span class="hljs-attr">recursive</span>: <span class="hljs-literal">true</span> })
       dirs[docDirPath] = <span class="hljs-literal">true</span>
     }
     
-
     <span class="hljs-keyword">const</span> htmlifiedSource = <span class="hljs-title function_">htmlifySource</span>(fileContents, pkgRelPath)
 
     <span class="hljs-keyword">return</span> fs.<span class="hljs-title function_">writeFile</span>(docFilePath, htmlifiedSource)
   }))
+
+  tocFiles.<span class="hljs-title function_">sort</span>(naturalSort)
+
+  <span class="hljs-keyword">const</span> indexPath = fsPath.<span class="hljs-title function_">join</span>(docPath, <span class="hljs-string">&#x27;index.html&#x27;</span>)
+  <span class="hljs-keyword">let</span> tocContent = <span class="hljs-string">`&lt;html&gt;
+  &lt;head&gt;
+    &lt;title&gt;<span class="hljs-subst">${projectFQN}</span>&lt;/title&gt;
+  &lt;/head&gt;
+    &lt;body&gt;
+      &lt;ul&gt;`</span>
+  <span class="hljs-keyword">for</span> (<span class="hljs-keyword">const</span> tocFile <span class="hljs-keyword">of</span> tocFiles) {
+    tocContent += <span class="hljs-string">`
+        &lt;li&gt;
+          &lt;a href=<span class="hljs-subst">${tocFile}</span>&gt;<span class="hljs-subst">${tocFile.slice(<span class="hljs-number">0</span>, -<span class="hljs-number">5</span>)}</span>&lt;/a&gt;
+        &lt;/li&gt;`</span>
+  }
+  tocContent += <span class="hljs-string">`
+      &lt;/ul&gt;
+    &lt;/body&gt;
+  &lt;/html&gt;`</span>
+
+  <span class="hljs-keyword">await</span> fs.<span class="hljs-title function_">writeFile</span>(indexPath, tocContent)
 
   res.<span class="hljs-title function_">setHeader</span>(<span class="hljs-string">&#x27;content-type&#x27;</span>, <span class="hljs-string">&#x27;text/terminal&#x27;</span>).<span class="hljs-title function_">send</span>(<span class="hljs-string">`Documented <span class="hljs-subst">${sourceFiles.length}</span> source files.`</span>)
 }
