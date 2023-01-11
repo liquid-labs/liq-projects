@@ -1,3 +1,15 @@
+<html>
+  <head>
+    <title>get-package-data.mjs</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/light.min.css">
+    <script type="module">
+      import hljs from 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/es/highlight.min.js';
+      import go from 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/es/languages/javascript.min.js';
+      hljs.registerLanguage('javascript', javascript);
+    </script>
+  </head>
+  <body>
+    <pre><code class="language-javascript">
 import { existsSync } from 'node:fs'
 import * as fs from 'node:fs/promises'
 import * as fsPath from 'node:path'
@@ -49,3 +61,6 @@ const getPackageData = async ({ localOrgKey, localProjectName, requireImplements
 }
 
 export { getPackageData }
+    </code></pre>
+  </body>
+</html>

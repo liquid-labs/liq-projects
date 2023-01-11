@@ -1,3 +1,15 @@
+<html>
+  <head>
+    <title>get-files.test.js</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/light.min.css">
+    <script type="module">
+      import hljs from 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/es/highlight.min.js';
+      import go from 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/es/languages/js.min.js';
+      hljs.registerLanguage('js', js);
+    </script>
+  </head>
+  <body>
+    <pre><code class="language-js">
 /* global describe expect test */
 
 import { getFiles } from '../get-files'
@@ -75,3 +87,6 @@ describe('getFiles', () => {
 			.toEqual([ 'b', 'b/d', 'c' ].map((f) => dataRoot + '/' + f))
 	})
 })
+    </code></pre>
+  </body>
+</html>

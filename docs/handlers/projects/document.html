@@ -1,3 +1,15 @@
+<html>
+  <head>
+    <title>document.js</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/light.min.css">
+    <script type="module">
+      import hljs from 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/es/highlight.min.js';
+      import go from 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/es/languages/js.min.js';
+      hljs.registerLanguage('js', js);
+    </script>
+  </head>
+  <body>
+    <pre><code class="language-js">
 import * as fs from 'node:fs/promises'
 import * as fsPath from 'node:path'
 
@@ -42,20 +54,60 @@ const func = ({ app, model }) => async (req, res) => {
   const sourceFiles = await getFiles({ dir: pkgSrc, reName: '.(?:js|mjs)$' })
   const dirs = {}
 
+  await fs.rm(docPath, { recursive: true })
+
   await Promise.all(sourceFiles.map(async (file) => {
     const fileContents = await fs.readFile(file, { encoding: 'utf8' })
     const pkgRelPath = file.slice(pkgSrcLength)
-    const docFilePath = fsPath.join(docPath, pkgRelPath)
+    const pkgRelDoc = pkgRelPath.slice(0, pkgRelPath.lastIndexOf('.')) + '.html'
+    const docFilePath = fsPath.join(docPath, pkgRelDoc)
     const docDirPath = fsPath.dirname(docFilePath)
     if (dirs[docDirPath] === undefined) {
       await fs.mkdir(docDirPath, { recursive: true })
       dirs[docDirPath] = true
     }
+    
 
-    return fs.writeFile(docFilePath, fileContents)
+    const htmlifiedSource = htmlifySource(fileContents, pkgRelPath)
+
+    return fs.writeFile(docFilePath, htmlifiedSource)
   }))
 
   res.setHeader('content-type', 'text/terminal').send(`Documented ${sourceFiles.length} source files.`)
 }
 
+// We don't need to translate the ones where the ext is also a valid file type indicator for highlight.js
+const extToType = {
+  'mjs': 'javascript'
+}
+
+const htmlifySource = (rawContent, pkgRelPath) => {
+  const fileExt = pkgRelPath.slice(pkgRelPath.lastIndexOf('.') + 1)
+  const fileType = extToType[fileExt] || fileExt
+  const title = fsPath.basename(pkgRelPath)
+
+  const html = `<html>
+  <head>
+    <title>${title}</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/light.min.css">
+    <script type="module">
+      import hljs from 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/es/highlight.min.js';
+      import go from 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/es/languages/${fileType}.min.js';
+      hljs.registerLanguage('${fileType}', ${fileType});
+    </script>
+  </head>
+  <body>
+    <pre><code class="language-${fileType}">
+${rawContent}
+    </code></pre>
+  </body>
+</html>`
+
+  return html
+}
+
 export { func, help, method, parameters, path }
+
+    </code></pre>
+  </body>
+</html>
