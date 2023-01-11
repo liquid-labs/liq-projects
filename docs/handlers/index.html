@@ -1,23 +1,16 @@
 <html>
   <head>
     <title>index.js</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/light.min.css">
-    <script type="module">
-      import hljs from 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/es/highlight.min.js';
-      import go from 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/es/languages/js.min.js';
-      hljs.registerLanguage('js', js);
-    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/lightfair.min.css">
   </head>
   <body>
-    <pre><code class="language-js">
-// import { handlers as orgHandlers } from './orgs'
-// import { handlers as projectHandlers } from './projects'
-import { handlers } from './projects'
+<span class="hljs-comment">// import { handlers as orgHandlers } from &#x27;./orgs&#x27;</span>
+<span class="hljs-comment">// import { handlers as projectHandlers } from &#x27;./projects&#x27;</span>
+<span class="hljs-keyword">import</span> { handlers } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;./projects&#x27;</span>
 
-// const handlers = [...orgHandlers].push(...projectHandlers)
+<span class="hljs-comment">// const handlers = [...orgHandlers].push(...projectHandlers)</span>
 
-export { handlers }
+<span class="hljs-keyword">export</span> { handlers }
 
-    </code></pre>
   </body>
 </html>

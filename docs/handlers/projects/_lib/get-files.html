@@ -1,64 +1,57 @@
 <html>
   <head>
     <title>get-files.mjs</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/light.min.css">
-    <script type="module">
-      import hljs from 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/es/highlight.min.js';
-      import go from 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/es/languages/javascript.min.js';
-      hljs.registerLanguage('javascript', javascript);
-    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/lightfair.min.css">
   </head>
   <body>
-    <pre><code class="language-javascript">
-import * as fs from 'node:fs/promises'
-import * as fsPath from 'node:path'
+<span class="hljs-keyword">import</span> * <span class="hljs-keyword">as</span> fs <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;node:fs/promises&#x27;</span>
+<span class="hljs-keyword">import</span> * <span class="hljs-keyword">as</span> fsPath <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;node:path&#x27;</span>
 
-/**
- * Recursively retrieves file names for each file under <code>dir</code>.
+<span class="hljs-comment">/**
+ * Recursively retrieves file names for each file under &lt;code&gt;dir&lt;/code&gt;.
  * 
- * <h2>Parameters</h2>
+ * &lt;h2&gt;Parameters&lt;/h2&gt;
  * - dir: (req) The path to the starting point for the search.
- * - reName: (opt) If set, then the base file name must match <code>reName</code> to be included.
- */
-const getFiles = async ({
+ * - reName: (opt) If set, then the base file name must match &lt;code&gt;reName&lt;/code&gt; to be included.
+ */</span>
+<span class="hljs-keyword">const</span> <span class="hljs-title function_">getFiles</span> = <span class="hljs-keyword">async</span> (<span class="hljs-params">{
   dir,
   depth,
-  ignoreDotFiles=false,
-  noRecurse=false,
-  onlyDirs=false,
+  ignoreDotFiles=<span class="hljs-literal">false</span>,
+  noRecurse=<span class="hljs-literal">false</span>,
+  onlyDirs=<span class="hljs-literal">false</span>,
   reName
-}) => {
-  if (noRecurse === true) depth = 1
+}</span>) =&gt; {
+  <span class="hljs-keyword">if</span> (noRecurse === <span class="hljs-literal">true</span>) depth = <span class="hljs-number">1</span>
 
-  const dirents = await fs.readdir(dir, { withFileTypes: true })
+  <span class="hljs-keyword">const</span> dirents = <span class="hljs-keyword">await</span> fs.<span class="hljs-title function_">readdir</span>(dir, { <span class="hljs-attr">withFileTypes</span>: <span class="hljs-literal">true</span> })
 
-  const files = await Promise.all(dirents.map((dirent) => {
-    const res = fsPath.resolve(dir, dirent.name)
-    if (dirent.isDirectory()) {
-      const newDepth = depth === undefined ? undefined : depth - 1
+  <span class="hljs-keyword">const</span> files = <span class="hljs-keyword">await</span> <span class="hljs-title class_">Promise</span>.<span class="hljs-title function_">all</span>(dirents.<span class="hljs-title function_">map</span>(<span class="hljs-function">(<span class="hljs-params">dirent</span>) =&gt;</span> {
+    <span class="hljs-keyword">const</span> res = fsPath.<span class="hljs-title function_">resolve</span>(dir, dirent.<span class="hljs-property">name</span>)
+    <span class="hljs-keyword">if</span> (dirent.<span class="hljs-title function_">isDirectory</span>()) {
+      <span class="hljs-keyword">const</span> newDepth = depth === <span class="hljs-literal">undefined</span> ? <span class="hljs-literal">undefined</span> : depth - <span class="hljs-number">1</span>
 
-      const dirResults = onlyDirs === true 
-          && (ignoreDotFiles === false || !fsPath.basename(res).startsWith('.')) 
+      <span class="hljs-keyword">const</span> dirResults = onlyDirs === <span class="hljs-literal">true</span> 
+          &amp;&amp; (ignoreDotFiles === <span class="hljs-literal">false</span> || !fsPath.<span class="hljs-title function_">basename</span>(res).<span class="hljs-title function_">startsWith</span>(<span class="hljs-string">&#x27;.&#x27;</span>)) 
         ? [ res ] 
         : []
-      if (newDepth === 0) /* then it was 1 */ return dirResults
+      <span class="hljs-keyword">if</span> (newDepth === <span class="hljs-number">0</span>) <span class="hljs-comment">/* then it was 1 */</span> <span class="hljs-keyword">return</span> dirResults
 
-      return (async () => {
-        return dirResults.concat(await getFiles({ dir: res, depth: newDepth, onlyDirs, reName }))
+      <span class="hljs-keyword">return</span> (<span class="hljs-keyword">async</span> () =&gt; {
+        <span class="hljs-keyword">return</span> dirResults.<span class="hljs-title function_">concat</span>(<span class="hljs-keyword">await</span> <span class="hljs-title function_">getFiles</span>({ <span class="hljs-attr">dir</span>: res, <span class="hljs-attr">depth</span>: newDepth, onlyDirs, reName }))
       })()
     }
-    // else
-    if ((reName === undefined || res.match(new RegExp(reName)))
-        && (ignoreDotFiles === false || !fsPath.basename(res).startsWith('.'))
-        && onlyDirs === false) {
-      return res
+    <span class="hljs-comment">// else</span>
+    <span class="hljs-keyword">if</span> ((reName === <span class="hljs-literal">undefined</span> || res.<span class="hljs-title function_">match</span>(<span class="hljs-keyword">new</span> <span class="hljs-title class_">RegExp</span>(reName)))
+        &amp;&amp; (ignoreDotFiles === <span class="hljs-literal">false</span> || !fsPath.<span class="hljs-title function_">basename</span>(res).<span class="hljs-title function_">startsWith</span>(<span class="hljs-string">&#x27;.&#x27;</span>))
+        &amp;&amp; onlyDirs === <span class="hljs-literal">false</span>) {
+      <span class="hljs-keyword">return</span> res
     }
-    return null
+    <span class="hljs-keyword">return</span> <span class="hljs-literal">null</span>
   }))
-  return files.flat().filter((n) => n !== null)
+  <span class="hljs-keyword">return</span> files.<span class="hljs-title function_">flat</span>().<span class="hljs-title function_">filter</span>(<span class="hljs-function">(<span class="hljs-params">n</span>) =&gt;</span> n !== <span class="hljs-literal">null</span>)
 }
 
-export { getFiles }
-    </code></pre>
+<span class="hljs-keyword">export</span> { getFiles }
   </body>
 </html>

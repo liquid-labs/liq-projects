@@ -1,92 +1,85 @@
 <html>
   <head>
     <title>get-files.test.js</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/light.min.css">
-    <script type="module">
-      import hljs from 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/es/highlight.min.js';
-      import go from 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/es/languages/js.min.js';
-      hljs.registerLanguage('js', js);
-    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/lightfair.min.css">
   </head>
   <body>
-    <pre><code class="language-js">
-/* global describe expect test */
+<span class="hljs-comment">/* global describe expect test */</span>
 
-import { getFiles } from '../get-files'
+<span class="hljs-keyword">import</span> { getFiles } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;../get-files&#x27;</span>
 
-const dataRoot = process.env.PWD + '/test-staging/handlers/projects/_lib/test/data'
+<span class="hljs-keyword">const</span> dataRoot = process.<span class="hljs-property">env</span>.<span class="hljs-property">PWD</span> + <span class="hljs-string">&#x27;/test-staging/handlers/projects/_lib/test/data&#x27;</span>
 
-describe('getFiles', () => {
-	test('recursively finds all files', async () => {
-		const results = await getFiles({ dir: dataRoot })
-		expect(results).toHaveLength(7)
-		expect(results)
-			.toEqual([ '.a2.txt', '.e/e1.txt', 'a1.txt', 'b/b1.txt', 'b/b2.plain', 'b/d/d1.txt', 'c/c1.txt' ].map((f) => dataRoot + '/' + f))
+<span class="hljs-title function_">describe</span>(<span class="hljs-string">&#x27;getFiles&#x27;</span>, <span class="hljs-function">() =&gt;</span> {
+	<span class="hljs-title function_">test</span>(<span class="hljs-string">&#x27;recursively finds all files&#x27;</span>, <span class="hljs-keyword">async</span> () =&gt; {
+		<span class="hljs-keyword">const</span> results = <span class="hljs-keyword">await</span> <span class="hljs-title function_">getFiles</span>({ <span class="hljs-attr">dir</span>: dataRoot })
+		<span class="hljs-title function_">expect</span>(results).<span class="hljs-title function_">toHaveLength</span>(<span class="hljs-number">7</span>)
+		<span class="hljs-title function_">expect</span>(results)
+			.<span class="hljs-title function_">toEqual</span>([ <span class="hljs-string">&#x27;.a2.txt&#x27;</span>, <span class="hljs-string">&#x27;.e/e1.txt&#x27;</span>, <span class="hljs-string">&#x27;a1.txt&#x27;</span>, <span class="hljs-string">&#x27;b/b1.txt&#x27;</span>, <span class="hljs-string">&#x27;b/b2.plain&#x27;</span>, <span class="hljs-string">&#x27;b/d/d1.txt&#x27;</span>, <span class="hljs-string">&#x27;c/c1.txt&#x27;</span> ].<span class="hljs-title function_">map</span>(<span class="hljs-function">(<span class="hljs-params">f</span>) =&gt;</span> dataRoot + <span class="hljs-string">&#x27;/&#x27;</span> + f))
 	})
 
-	test("'onlyDirs: true' recursively finds all directories", async () => {
-		const results = await getFiles({ dir: dataRoot, onlyDirs: true })
-		expect(results).toHaveLength(4)
-		expect(results)
-			.toEqual([ '.e', 'b', 'b/d', 'c' ].map((f) => dataRoot + '/' + f))
+	<span class="hljs-title function_">test</span>(<span class="hljs-string">&quot;&#x27;onlyDirs: true&#x27; recursively finds all directories&quot;</span>, <span class="hljs-keyword">async</span> () =&gt; {
+		<span class="hljs-keyword">const</span> results = <span class="hljs-keyword">await</span> <span class="hljs-title function_">getFiles</span>({ <span class="hljs-attr">dir</span>: dataRoot, <span class="hljs-attr">onlyDirs</span>: <span class="hljs-literal">true</span> })
+		<span class="hljs-title function_">expect</span>(results).<span class="hljs-title function_">toHaveLength</span>(<span class="hljs-number">4</span>)
+		<span class="hljs-title function_">expect</span>(results)
+			.<span class="hljs-title function_">toEqual</span>([ <span class="hljs-string">&#x27;.e&#x27;</span>, <span class="hljs-string">&#x27;b&#x27;</span>, <span class="hljs-string">&#x27;b/d&#x27;</span>, <span class="hljs-string">&#x27;c&#x27;</span> ].<span class="hljs-title function_">map</span>(<span class="hljs-function">(<span class="hljs-params">f</span>) =&gt;</span> dataRoot + <span class="hljs-string">&#x27;/&#x27;</span> + f))
 	})
 
-	test("'depth: 1' limits search to root directory", async () => {
-		const results = await getFiles({ dir: dataRoot, depth: 1 })
-		expect(results).toHaveLength(2)
-		expect(results)
-			.toEqual([ '.a2.txt', 'a1.txt' ].map((f) => dataRoot + '/' + f))
+	<span class="hljs-title function_">test</span>(<span class="hljs-string">&quot;&#x27;depth: 1&#x27; limits search to root directory&quot;</span>, <span class="hljs-keyword">async</span> () =&gt; {
+		<span class="hljs-keyword">const</span> results = <span class="hljs-keyword">await</span> <span class="hljs-title function_">getFiles</span>({ <span class="hljs-attr">dir</span>: dataRoot, <span class="hljs-attr">depth</span>: <span class="hljs-number">1</span> })
+		<span class="hljs-title function_">expect</span>(results).<span class="hljs-title function_">toHaveLength</span>(<span class="hljs-number">2</span>)
+		<span class="hljs-title function_">expect</span>(results)
+			.<span class="hljs-title function_">toEqual</span>([ <span class="hljs-string">&#x27;.a2.txt&#x27;</span>, <span class="hljs-string">&#x27;a1.txt&#x27;</span> ].<span class="hljs-title function_">map</span>(<span class="hljs-function">(<span class="hljs-params">f</span>) =&gt;</span> dataRoot + <span class="hljs-string">&#x27;/&#x27;</span> + f))
 	})
 
-	test("'depth: 2' limits search to root directory and direct child files", async () => {
-		const results = await getFiles({ dir: dataRoot, depth: 2 })
-		expect(results).toHaveLength(6)
-		expect(results)
-			.toEqual([ '.a2.txt', '.e/e1.txt', 'a1.txt', 'b/b1.txt', 'b/b2.plain', 'c/c1.txt' ].map((f) => dataRoot + '/' + f))
+	<span class="hljs-title function_">test</span>(<span class="hljs-string">&quot;&#x27;depth: 2&#x27; limits search to root directory and direct child files&quot;</span>, <span class="hljs-keyword">async</span> () =&gt; {
+		<span class="hljs-keyword">const</span> results = <span class="hljs-keyword">await</span> <span class="hljs-title function_">getFiles</span>({ <span class="hljs-attr">dir</span>: dataRoot, <span class="hljs-attr">depth</span>: <span class="hljs-number">2</span> })
+		<span class="hljs-title function_">expect</span>(results).<span class="hljs-title function_">toHaveLength</span>(<span class="hljs-number">6</span>)
+		<span class="hljs-title function_">expect</span>(results)
+			.<span class="hljs-title function_">toEqual</span>([ <span class="hljs-string">&#x27;.a2.txt&#x27;</span>, <span class="hljs-string">&#x27;.e/e1.txt&#x27;</span>, <span class="hljs-string">&#x27;a1.txt&#x27;</span>, <span class="hljs-string">&#x27;b/b1.txt&#x27;</span>, <span class="hljs-string">&#x27;b/b2.plain&#x27;</span>, <span class="hljs-string">&#x27;c/c1.txt&#x27;</span> ].<span class="hljs-title function_">map</span>(<span class="hljs-function">(<span class="hljs-params">f</span>) =&gt;</span> dataRoot + <span class="hljs-string">&#x27;/&#x27;</span> + f))
 	})
 
-	test("'depth: 2, onlyDirs: true' limits search to root directory and direct child dirs", async () => {
-		const results = await getFiles({ dir: dataRoot, depth: 2, onlyDirs: true })
-		expect(results).toHaveLength(4)
-		expect(results)
-			.toEqual([ '.e', 'b', 'b/d', 'c' ].map((f) => dataRoot + '/' + f))
+	<span class="hljs-title function_">test</span>(<span class="hljs-string">&quot;&#x27;depth: 2, onlyDirs: true&#x27; limits search to root directory and direct child dirs&quot;</span>, <span class="hljs-keyword">async</span> () =&gt; {
+		<span class="hljs-keyword">const</span> results = <span class="hljs-keyword">await</span> <span class="hljs-title function_">getFiles</span>({ <span class="hljs-attr">dir</span>: dataRoot, <span class="hljs-attr">depth</span>: <span class="hljs-number">2</span>, <span class="hljs-attr">onlyDirs</span>: <span class="hljs-literal">true</span> })
+		<span class="hljs-title function_">expect</span>(results).<span class="hljs-title function_">toHaveLength</span>(<span class="hljs-number">4</span>)
+		<span class="hljs-title function_">expect</span>(results)
+			.<span class="hljs-title function_">toEqual</span>([ <span class="hljs-string">&#x27;.e&#x27;</span>, <span class="hljs-string">&#x27;b&#x27;</span>, <span class="hljs-string">&#x27;b/d&#x27;</span>, <span class="hljs-string">&#x27;c&#x27;</span> ].<span class="hljs-title function_">map</span>(<span class="hljs-function">(<span class="hljs-params">f</span>) =&gt;</span> dataRoot + <span class="hljs-string">&#x27;/&#x27;</span> + f))
 	})
 
-	test("'noRecurse: true' limits search to root directory", async () => {
-		const results = await getFiles({ dir: dataRoot, noRecurse: true })
-		expect(results).toHaveLength(2)
-		expect(results)
-			.toEqual([ '.a2.txt', 'a1.txt' ].map((f) => dataRoot + '/' + f))
+	<span class="hljs-title function_">test</span>(<span class="hljs-string">&quot;&#x27;noRecurse: true&#x27; limits search to root directory&quot;</span>, <span class="hljs-keyword">async</span> () =&gt; {
+		<span class="hljs-keyword">const</span> results = <span class="hljs-keyword">await</span> <span class="hljs-title function_">getFiles</span>({ <span class="hljs-attr">dir</span>: dataRoot, <span class="hljs-attr">noRecurse</span>: <span class="hljs-literal">true</span> })
+		<span class="hljs-title function_">expect</span>(results).<span class="hljs-title function_">toHaveLength</span>(<span class="hljs-number">2</span>)
+		<span class="hljs-title function_">expect</span>(results)
+			.<span class="hljs-title function_">toEqual</span>([ <span class="hljs-string">&#x27;.a2.txt&#x27;</span>, <span class="hljs-string">&#x27;a1.txt&#x27;</span> ].<span class="hljs-title function_">map</span>(<span class="hljs-function">(<span class="hljs-params">f</span>) =&gt;</span> dataRoot + <span class="hljs-string">&#x27;/&#x27;</span> + f))
 	})
 
-	test("'noRecurse' overrides depth", async () => {
-		const results = await getFiles({ dir: dataRoot, noRecurse: true, depth: 2 })
-		expect(results).toHaveLength(2)
-		expect(results)
-			.toEqual([ '.a2.txt', 'a1.txt' ].map((f) => dataRoot + '/' + f))
+	<span class="hljs-title function_">test</span>(<span class="hljs-string">&quot;&#x27;noRecurse&#x27; overrides depth&quot;</span>, <span class="hljs-keyword">async</span> () =&gt; {
+		<span class="hljs-keyword">const</span> results = <span class="hljs-keyword">await</span> <span class="hljs-title function_">getFiles</span>({ <span class="hljs-attr">dir</span>: dataRoot, <span class="hljs-attr">noRecurse</span>: <span class="hljs-literal">true</span>, <span class="hljs-attr">depth</span>: <span class="hljs-number">2</span> })
+		<span class="hljs-title function_">expect</span>(results).<span class="hljs-title function_">toHaveLength</span>(<span class="hljs-number">2</span>)
+		<span class="hljs-title function_">expect</span>(results)
+			.<span class="hljs-title function_">toEqual</span>([ <span class="hljs-string">&#x27;.a2.txt&#x27;</span>, <span class="hljs-string">&#x27;a1.txt&#x27;</span> ].<span class="hljs-title function_">map</span>(<span class="hljs-function">(<span class="hljs-params">f</span>) =&gt;</span> dataRoot + <span class="hljs-string">&#x27;/&#x27;</span> + f))
 	})
 
-	test("'reName: (?:.txt) filters out non-'.txt' files", async () => {
-		const results = await getFiles({ dir: dataRoot, reName: '(?:.txt)' })
-		expect(results).toHaveLength(6)
-		expect(results)
-			.toEqual([ '.a2.txt', '.e/e1.txt', 'a1.txt', 'b/b1.txt', 'b/d/d1.txt', 'c/c1.txt' ].map((f) => dataRoot + '/' + f))
+	<span class="hljs-title function_">test</span>(<span class="hljs-string">&quot;&#x27;reName: (?:.txt) filters out non-&#x27;.txt&#x27; files&quot;</span>, <span class="hljs-keyword">async</span> () =&gt; {
+		<span class="hljs-keyword">const</span> results = <span class="hljs-keyword">await</span> <span class="hljs-title function_">getFiles</span>({ <span class="hljs-attr">dir</span>: dataRoot, <span class="hljs-attr">reName</span>: <span class="hljs-string">&#x27;(?:.txt)&#x27;</span> })
+		<span class="hljs-title function_">expect</span>(results).<span class="hljs-title function_">toHaveLength</span>(<span class="hljs-number">6</span>)
+		<span class="hljs-title function_">expect</span>(results)
+			.<span class="hljs-title function_">toEqual</span>([ <span class="hljs-string">&#x27;.a2.txt&#x27;</span>, <span class="hljs-string">&#x27;.e/e1.txt&#x27;</span>, <span class="hljs-string">&#x27;a1.txt&#x27;</span>, <span class="hljs-string">&#x27;b/b1.txt&#x27;</span>, <span class="hljs-string">&#x27;b/d/d1.txt&#x27;</span>, <span class="hljs-string">&#x27;c/c1.txt&#x27;</span> ].<span class="hljs-title function_">map</span>(<span class="hljs-function">(<span class="hljs-params">f</span>) =&gt;</span> dataRoot + <span class="hljs-string">&#x27;/&#x27;</span> + f))
 	})
 
-	test("will ignore regular dot-files when 'ignoreDotFiles: true'", async () => {
-		const results = await getFiles({ dir: dataRoot, ignoreDotFiles: true, noRecurse: true })
-		expect(results).toHaveLength(1)
-		expect(results)
-			.toEqual([ 'a1.txt' ].map((f) => dataRoot + '/' + f))
+	<span class="hljs-title function_">test</span>(<span class="hljs-string">&quot;will ignore regular dot-files when &#x27;ignoreDotFiles: true&#x27;&quot;</span>, <span class="hljs-keyword">async</span> () =&gt; {
+		<span class="hljs-keyword">const</span> results = <span class="hljs-keyword">await</span> <span class="hljs-title function_">getFiles</span>({ <span class="hljs-attr">dir</span>: dataRoot, <span class="hljs-attr">ignoreDotFiles</span>: <span class="hljs-literal">true</span>, <span class="hljs-attr">noRecurse</span>: <span class="hljs-literal">true</span> })
+		<span class="hljs-title function_">expect</span>(results).<span class="hljs-title function_">toHaveLength</span>(<span class="hljs-number">1</span>)
+		<span class="hljs-title function_">expect</span>(results)
+			.<span class="hljs-title function_">toEqual</span>([ <span class="hljs-string">&#x27;a1.txt&#x27;</span> ].<span class="hljs-title function_">map</span>(<span class="hljs-function">(<span class="hljs-params">f</span>) =&gt;</span> dataRoot + <span class="hljs-string">&#x27;/&#x27;</span> + f))
 	})
 
-	test("will ignore dir dot-files when 'ignoreDotFiles: true'", async () => {
-		const results = await getFiles({ dir: dataRoot, onlyDirs: true, ignoreDotFiles: true })
-		expect(results).toHaveLength(3)
-		expect(results)
-			.toEqual([ 'b', 'b/d', 'c' ].map((f) => dataRoot + '/' + f))
+	<span class="hljs-title function_">test</span>(<span class="hljs-string">&quot;will ignore dir dot-files when &#x27;ignoreDotFiles: true&#x27;&quot;</span>, <span class="hljs-keyword">async</span> () =&gt; {
+		<span class="hljs-keyword">const</span> results = <span class="hljs-keyword">await</span> <span class="hljs-title function_">getFiles</span>({ <span class="hljs-attr">dir</span>: dataRoot, <span class="hljs-attr">onlyDirs</span>: <span class="hljs-literal">true</span>, <span class="hljs-attr">ignoreDotFiles</span>: <span class="hljs-literal">true</span> })
+		<span class="hljs-title function_">expect</span>(results).<span class="hljs-title function_">toHaveLength</span>(<span class="hljs-number">3</span>)
+		<span class="hljs-title function_">expect</span>(results)
+			.<span class="hljs-title function_">toEqual</span>([ <span class="hljs-string">&#x27;b&#x27;</span>, <span class="hljs-string">&#x27;b/d&#x27;</span>, <span class="hljs-string">&#x27;c&#x27;</span> ].<span class="hljs-title function_">map</span>(<span class="hljs-function">(<span class="hljs-params">f</span>) =&gt;</span> dataRoot + <span class="hljs-string">&#x27;/&#x27;</span> + f))
 	})
 })
-    </code></pre>
   </body>
 </html>

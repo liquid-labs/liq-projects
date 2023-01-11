@@ -1,113 +1,105 @@
 <html>
   <head>
     <title>document.js</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/light.min.css">
-    <script type="module">
-      import hljs from 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/es/highlight.min.js';
-      import go from 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/es/languages/js.min.js';
-      hljs.registerLanguage('js', js);
-    </script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/atom-one-light.min.css">
   </head>
-  <body>
-    <pre><code class="language-js">
-import * as fs from 'node:fs/promises'
-import * as fsPath from 'node:path'
+  <body><pre><code>
+<span class="hljs-keyword">import</span> * <span class="hljs-keyword">as</span> fs <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;node:fs/promises&#x27;</span>
+<span class="hljs-keyword">import</span> * <span class="hljs-keyword">as</span> fsPath <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;node:path&#x27;</span>
 
-import walk from 'walkdir'
+<span class="hljs-keyword">import</span> hljs <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;highlight.js/lib/core&#x27;</span>;
+<span class="hljs-keyword">import</span> javascript <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;highlight.js/lib/languages/javascript&#x27;</span>;
 
-import { getFiles } from './_lib/get-files'
-import { getPackageData } from './_lib/get-package-data'
+<span class="hljs-keyword">import</span> walk <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;walkdir&#x27;</span>
 
-const help = {
-  name: 'Local project document',
-  summary: 'Generates developer documents for local projects.',
-  description: 'Generates developer documentation for <em>local<rst> projects which have been imported to the liq playground.'
+<span class="hljs-keyword">import</span> { getFiles } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;./_lib/get-files&#x27;</span>
+<span class="hljs-keyword">import</span> { getPackageData } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;./_lib/get-package-data&#x27;</span>
+
+hljs.<span class="hljs-title function_">registerLanguage</span>(<span class="hljs-string">&#x27;javascript&#x27;</span>, javascript);
+
+<span class="hljs-keyword">const</span> help = {
+  <span class="hljs-attr">name</span>: <span class="hljs-string">&#x27;Local project document&#x27;</span>,
+  <span class="hljs-attr">summary</span>: <span class="hljs-string">&#x27;Generates developer documents for local projects.&#x27;</span>,
+  <span class="hljs-attr">description</span>: <span class="hljs-string">&#x27;Generates developer documentation for &lt;em&gt;local&lt;rst&gt; projects which have been imported to the liq playground.&#x27;</span>
 }
 
-const method = 'put'
-const path = [ 'playground', 'projects', ':localOrgKey', ':localProjectName', 'document' ]
-const parameters = [
+<span class="hljs-keyword">const</span> method = <span class="hljs-string">&#x27;put&#x27;</span>
+<span class="hljs-keyword">const</span> path = [ <span class="hljs-string">&#x27;playground&#x27;</span>, <span class="hljs-string">&#x27;projects&#x27;</span>, <span class="hljs-string">&#x27;:localOrgKey&#x27;</span>, <span class="hljs-string">&#x27;:localProjectName&#x27;</span>, <span class="hljs-string">&#x27;document&#x27;</span> ]
+<span class="hljs-keyword">const</span> parameters = [
   {
-    name: 'ignoreDocumentationImplementation',
-    isBoolean: true,
-    description: 'If set to true, then a missing <code>implementation:documentation<rst> label will not cause the process to exit.'
+    <span class="hljs-attr">name</span>: <span class="hljs-string">&#x27;ignoreDocumentationImplementation&#x27;</span>,
+    <span class="hljs-attr">isBoolean</span>: <span class="hljs-literal">true</span>,
+    <span class="hljs-attr">description</span>: <span class="hljs-string">&#x27;If set to true, then a missing &lt;code&gt;implementation:documentation&lt;rst&gt; label will not cause the process to exit.&#x27;</span>
   }
 ]
 
-const func = ({ app, model }) => async (req, res) => {
-  const { localOrgKey, ignoreDocumentationImplementation, localProjectName } = req.vars
+<span class="hljs-keyword">const</span> <span class="hljs-title function_">func</span> = (<span class="hljs-params">{ app, model }</span>) =&gt; <span class="hljs-keyword">async</span> (req, res) =&gt; {
+  <span class="hljs-keyword">const</span> { localOrgKey, ignoreDocumentationImplementation, localProjectName } = req.<span class="hljs-property">vars</span>
 
-  const requireImplements = ignoreDocumentationImplementation === true
+  <span class="hljs-keyword">const</span> requireImplements = ignoreDocumentationImplementation === <span class="hljs-literal">true</span>
     ? []
-    : [ 'implements:documentation' ]
+    : [ <span class="hljs-string">&#x27;implements:documentation&#x27;</span> ]
 
-  const pkgData = await getPackageData({ localOrgKey, localProjectName, requireImplements, res })
-  if (pkgData === false) return // error results already sent
-  // else, we are good to start generating documentation!
+  <span class="hljs-keyword">const</span> pkgData = <span class="hljs-keyword">await</span> <span class="hljs-title function_">getPackageData</span>({ localOrgKey, localProjectName, requireImplements, res })
+  <span class="hljs-keyword">if</span> (pkgData === <span class="hljs-literal">false</span>) <span class="hljs-keyword">return</span> <span class="hljs-comment">// error results already sent</span>
+  <span class="hljs-comment">// else, we are good to start generating documentation!</span>
 
-  const { projectPath } = pkgData
+  <span class="hljs-keyword">const</span> { projectPath } = pkgData
 
-  const pkgSrc = fsPath.join(projectPath, 'src')
-  const docPath = fsPath.join(projectPath, 'docs')
+  <span class="hljs-keyword">const</span> pkgSrc = fsPath.<span class="hljs-title function_">join</span>(projectPath, <span class="hljs-string">&#x27;src&#x27;</span>)
+  <span class="hljs-keyword">const</span> docPath = fsPath.<span class="hljs-title function_">join</span>(projectPath, <span class="hljs-string">&#x27;docs&#x27;</span>)
 
-  const pkgSrcLength = pkgSrc.length
-  const sourceFiles = await getFiles({ dir: pkgSrc, reName: '.(?:js|mjs)$' })
-  const dirs = {}
+  <span class="hljs-keyword">const</span> pkgSrcLength = pkgSrc.<span class="hljs-property">length</span>
+  <span class="hljs-keyword">const</span> sourceFiles = <span class="hljs-keyword">await</span> <span class="hljs-title function_">getFiles</span>({ <span class="hljs-attr">dir</span>: pkgSrc, <span class="hljs-attr">reName</span>: <span class="hljs-string">&#x27;.(?:js|mjs)$&#x27;</span> })
+  <span class="hljs-keyword">const</span> dirs = {}
 
-  await fs.rm(docPath, { recursive: true })
+  <span class="hljs-keyword">await</span> fs.<span class="hljs-title function_">rm</span>(docPath, { <span class="hljs-attr">recursive</span>: <span class="hljs-literal">true</span> })
 
-  await Promise.all(sourceFiles.map(async (file) => {
-    const fileContents = await fs.readFile(file, { encoding: 'utf8' })
-    const pkgRelPath = file.slice(pkgSrcLength)
-    const pkgRelDoc = pkgRelPath.slice(0, pkgRelPath.lastIndexOf('.')) + '.html'
-    const docFilePath = fsPath.join(docPath, pkgRelDoc)
-    const docDirPath = fsPath.dirname(docFilePath)
-    if (dirs[docDirPath] === undefined) {
-      await fs.mkdir(docDirPath, { recursive: true })
-      dirs[docDirPath] = true
+  <span class="hljs-keyword">await</span> <span class="hljs-title class_">Promise</span>.<span class="hljs-title function_">all</span>(sourceFiles.<span class="hljs-title function_">map</span>(<span class="hljs-keyword">async</span> (file) =&gt; {
+    <span class="hljs-keyword">const</span> fileContents = <span class="hljs-keyword">await</span> fs.<span class="hljs-title function_">readFile</span>(file, { <span class="hljs-attr">encoding</span>: <span class="hljs-string">&#x27;utf8&#x27;</span> })
+    <span class="hljs-keyword">const</span> pkgRelPath = file.<span class="hljs-title function_">slice</span>(pkgSrcLength)
+    <span class="hljs-keyword">const</span> pkgRelDoc = pkgRelPath.<span class="hljs-title function_">slice</span>(<span class="hljs-number">0</span>, pkgRelPath.<span class="hljs-title function_">lastIndexOf</span>(<span class="hljs-string">&#x27;.&#x27;</span>)) + <span class="hljs-string">&#x27;.html&#x27;</span>
+    <span class="hljs-keyword">const</span> docFilePath = fsPath.<span class="hljs-title function_">join</span>(docPath, pkgRelDoc)
+    <span class="hljs-keyword">const</span> docDirPath = fsPath.<span class="hljs-title function_">dirname</span>(docFilePath)
+    <span class="hljs-keyword">if</span> (dirs[docDirPath] === <span class="hljs-literal">undefined</span>) {
+      <span class="hljs-keyword">await</span> fs.<span class="hljs-title function_">mkdir</span>(docDirPath, { <span class="hljs-attr">recursive</span>: <span class="hljs-literal">true</span> })
+      dirs[docDirPath] = <span class="hljs-literal">true</span>
     }
     
 
-    const htmlifiedSource = htmlifySource(fileContents, pkgRelPath)
+    <span class="hljs-keyword">const</span> htmlifiedSource = <span class="hljs-title function_">htmlifySource</span>(fileContents, pkgRelPath)
 
-    return fs.writeFile(docFilePath, htmlifiedSource)
+    <span class="hljs-keyword">return</span> fs.<span class="hljs-title function_">writeFile</span>(docFilePath, htmlifiedSource)
   }))
 
-  res.setHeader('content-type', 'text/terminal').send(`Documented ${sourceFiles.length} source files.`)
+  res.<span class="hljs-title function_">setHeader</span>(<span class="hljs-string">&#x27;content-type&#x27;</span>, <span class="hljs-string">&#x27;text/terminal&#x27;</span>).<span class="hljs-title function_">send</span>(<span class="hljs-string">`Documented <span class="hljs-subst">${sourceFiles.length}</span> source files.`</span>)
 }
 
-// We don't need to translate the ones where the ext is also a valid file type indicator for highlight.js
-const extToType = {
-  'mjs': 'javascript'
+<span class="hljs-keyword">const</span> extToType = {
+  <span class="hljs-attr">js</span>: <span class="hljs-string">&#x27;javascript&#x27;</span>,
+  <span class="hljs-attr">jsx</span>: <span class="hljs-string">&#x27;javascript&#x27;</span>,
+  <span class="hljs-attr">mjs</span>: <span class="hljs-string">&#x27;javascript&#x27;</span>
 }
 
-const htmlifySource = (rawContent, pkgRelPath) => {
-  const fileExt = pkgRelPath.slice(pkgRelPath.lastIndexOf('.') + 1)
-  const fileType = extToType[fileExt] || fileExt
-  const title = fsPath.basename(pkgRelPath)
+<span class="hljs-keyword">const</span> <span class="hljs-title function_">htmlifySource</span> = (<span class="hljs-params">rawContent, pkgRelPath</span>) =&gt; {
+  <span class="hljs-keyword">const</span> fileExt = pkgRelPath.<span class="hljs-title function_">slice</span>(pkgRelPath.<span class="hljs-title function_">lastIndexOf</span>(<span class="hljs-string">&#x27;.&#x27;</span>) + <span class="hljs-number">1</span>)
+  <span class="hljs-keyword">const</span> fileType = extToType[fileExt] || fileExt
+  <span class="hljs-keyword">const</span> title = fsPath.<span class="hljs-title function_">basename</span>(pkgRelPath)
 
-  const html = `<html>
-  <head>
-    <title>${title}</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/light.min.css">
-    <script type="module">
-      import hljs from 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/es/highlight.min.js';
-      import go from 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/es/languages/${fileType}.min.js';
-      hljs.registerLanguage('${fileType}', ${fileType});
-    </script>
-  </head>
-  <body>
-    <pre><code class="language-${fileType}">
-${rawContent}
-    </code></pre>
-  </body>
-</html>`
+  <span class="hljs-keyword">let</span> html = <span class="hljs-string">`&lt;html&gt;
+  &lt;head&gt;
+    &lt;title&gt;<span class="hljs-subst">${title}</span>&lt;/title&gt;
+    &lt;link rel=&quot;stylesheet&quot; href=&quot;https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/lightfair.min.css&quot;&gt;
+  &lt;/head&gt;
+  &lt;body&gt;
+<span class="hljs-subst">${hljs.highlight(rawContent, { language: fileType }).value}</span>
+  &lt;/body&gt;
+&lt;/html&gt;`</span>
 
-  return html
+  <span class="hljs-keyword">return</span> html
 }
 
-export { func, help, method, parameters, path }
-
-    </code></pre>
+<span class="hljs-keyword">export</span> { func, help, method, parameters, path }
+</code></pre>
   </body>
 </html>
