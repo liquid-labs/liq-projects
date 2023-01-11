@@ -13,7 +13,7 @@ const help = {
 }
 
 const method = 'put'
-const path = [ 'orgs', ':localOrgKey', 'projects', ':projectName']
+const path = [ 'playground', 'projects', ':localOrgKey', ':localProjectName', 'document' ]
 const parameters = [
   {
     name: 'ignoreDocumentationImplementation',
@@ -22,63 +22,40 @@ const parameters = [
   }
 ]
 
-const func = ({ app, model }) => {
-  app.commonPathResolvers['localOrgKey'] = {
-    optionsFetcher: async () => {
-      // TODO: we really want to see the endpoint parameters so we can properly handle when 'currentOrgKey' is set
-      // TODO: this is a good case for using the cache
-      const liqPlayground = process.env.LIQ_HOME || fsPath.join(process.env.HOME, '.liq', 'playground')
-      const absDirs = await getFiles({ dir: liqPlayground, ignoreDotFiles: true, onlyDirs: true, depth: 1 })
-      return absDirs?.map((d) => fsPath.basename(d))
-    },
-    bitReString: '(?:[a-z][a-z0-9-]*)?'
-  }
+const func = ({ app, model }) => async (req, res) => {
+  const { localOrgKey, ignoreDocumentationImplementation, localProjectName } = req.vars
 
-  app.commonPathResolvers['projectName'] = {
-    optionsFetcher: async ({ localOrgKey }) => {
-      // TODO: we really want to see the endpoint parameters so we can properly handle when 'currentOrgKey' is set
-      // TODO: this is a good case for using the cache
-      const liqPlayground = process.env.LIQ_HOME || fsPath.join(process.env.HOME, '.liq', 'playground')
-      const orgDir = fsPath.join(liqPlayground, localOrgKey)
-      const absDirs = await getFiles({ dir: liqPlayground, ignoreDotFiles: true, onlyDirs: true, depth: 1 })
-      return absDirs?.map((d) => fsPath.basename(e))
-    },
-    bitReString: '(?:[a-z][a-z0-9-]*)?'
-  }
-  
-  return async (req, res) => {
-    const { localOrgKey, ignoreDocumentationImplementation, projectName } = req.vars
+  const requireImplements = ignoreDocumentationImplementation === true
+    ? []
+    : [ 'implements:documentation' ]
 
-    const requireImplements = ignoreDocumentationImplementation === true
-      ? []
-      : [ 'implementation:documentation' ]
+  const pkgData = await getPackageData({ localOrgKey, localProjectName, requireImplements, res })
+  if (pkgData === false) return // error results already sent
+  // else, we are good to start generating documentation!
 
-    const pkgData = await getPackageData({ localOrgKey, projectName, requireImplements })
-    if (pkgData === false) return // error results already sent
-    // else, we are good to start generating documentation!
+  const { projectPath } = pkgData
 
-    const { projectPath } = pkgData
+  const pkgSrc = fsPath.join(projectPath, 'src')
+  const docPath = fsPath.join(projectPath, 'docs')
 
-    const pkgSrc = fsPath.join(projectPath, 'src')
-    const docPath = fsPath.join(projectPath, 'docs')
-    const sourceFiles = getFiles({ dir: pkgSrc, reName: '.(?:js|mjs)' })
-    const dirs = {}
+  const pkgSrcLength = pkgSrc.length
+  const sourceFiles = await getFiles({ dir: pkgSrc, reName: '.(?:js|mjs)$' })
+  const dirs = {}
 
-    await Promise.all(files.map(async (file) => {
-      const fileContents = await fs.readFile(file, { encoding: 'utf8' })
-      const baseName = fsPath.basename(file)
-      const docFilePath = fsPath.join(docPath, docFilePath)
-      const docDirPath = fsPath.dirname(docFilePath)
-      if (dirs[docDirPath] === undefined) {
-        await fs.mkdir(docDirPath, { recursive: true })
-        dirs[docDirPath] = true
-      }
+  await Promise.all(sourceFiles.map(async (file) => {
+    const fileContents = await fs.readFile(file, { encoding: 'utf8' })
+    const pkgRelPath = file.slice(pkgSrcLength)
+    const docFilePath = fsPath.join(docPath, pkgRelPath)
+    const docDirPath = fsPath.dirname(docFilePath)
+    if (dirs[docDirPath] === undefined) {
+      await fs.mkdir(docDirPath, { recursive: true })
+      dirs[docDirPath] = true
+    }
 
-      return fs.writeFile(docFilePath)
-    }))
+    return fs.writeFile(docFilePath, fileContents)
+  }))
 
-    res.setHeader('content-type', 'text/terminal').send(`Documented ${files.length} source files.`)
-  }
+  res.setHeader('content-type', 'text/terminal').send(`Documented ${sourceFiles.length} source files.`)
 }
 
 export { func, help, method, parameters, path }

@@ -25,7 +25,7 @@
   "liq": {
     "orgBase": "git@github.com:Liquid-Labs/Liquid-Labs.git",
     "packageType": "node|server",
-    "labels": [
+    "tags": [
       "plugin:liq-core",
       "type:plugin:liq-core",
       "implements:documentation"
