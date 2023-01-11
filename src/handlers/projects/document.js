@@ -83,10 +83,23 @@ const htmlifySource = (rawContent, pkgRelPath) => {
   let html = `<html>
   <head>
     <title>${title}</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/lightfair.min.css">
+
+    <style>
+      pre > code {
+        margin: 5px 5px 5px 25px;
+        padding: 5px 5px 5px 0;
+        border-top: solid blue 1px;
+        border-left: solid blue 1px;
+        border-bottom: solid blue 1px;
+      }
+    </style>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/base16/google-light.min.css">
   </head>
   <body>
+    <pre><code>
 ${hljs.highlight(rawContent, { language: fileType }).value}
+    </code></pre>
   </body>
 </html>`
 
