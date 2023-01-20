@@ -1,38 +1,37 @@
 import * as fs from 'node:fs/promises'
 import * as fsPath from 'node:path'
 
-import hljs from 'highlight.js/lib/core';
-import javascript from 'highlight.js/lib/languages/javascript';
+import hljs from 'highlight.js/lib/core'
+import javascript from 'highlight.js/lib/languages/javascript'
 import naturalSort from 'natural-sort'
-import walk from 'walkdir'
 
 import { getFiles } from './_lib/get-files'
 import { getPackageData } from './_lib/get-package-data'
 
-hljs.registerLanguage('javascript', javascript);
+hljs.registerLanguage('javascript', javascript)
 
 const help = {
-  name: 'Local project document',
-  summary: 'Generates developer documents for local projects.',
-  description: 'Generates developer documentation for <em>local<rst> projects which have been imported to the liq playground.'
+  name        : 'Local project document',
+  summary     : 'Generates developer documents for local projects.',
+  description : 'Generates developer documentation for <em>local<rst> projects which have been imported to the liq playground.'
 }
 
 const method = 'put'
-const path = [ 'playground', 'projects', ':localOrgKey', ':localProjectName', 'document' ]
+const path = ['playground', 'projects', ':localOrgKey', ':localProjectName', 'document']
 const parameters = [
   {
-    name: 'ignoreDocumentationImplementation',
-    isBoolean: true,
-    description: 'If set to true, then a missing <code>implementation:documentation<rst> label will not cause the process to exit.'
+    name        : 'ignoreDocumentationImplementation',
+    isBoolean   : true,
+    description : 'If set to true, then a missing <code>implementation:documentation<rst> label will not cause the process to exit.'
   }
 ]
 
-const func = ({ app, model }) => async (req, res) => {
+const func = ({ app, model }) => async(req, res) => {
   const { localOrgKey, ignoreDocumentationImplementation, localProjectName } = req.vars
 
   const requireImplements = ignoreDocumentationImplementation === true
     ? []
-    : [ 'implements:documentation' ]
+    : ['implements:documentation']
 
   const pkgData = await getPackageData({ localOrgKey, localProjectName, requireImplements, res })
   if (pkgData === false) return // error results already sent
@@ -44,15 +43,15 @@ const func = ({ app, model }) => async (req, res) => {
   const docPath = fsPath.join(projectPath, 'docs')
 
   const pkgSrcLength = pkgSrc.length
-  const sourceFiles = await getFiles({ dir: pkgSrc, reName: '.(?:js|mjs)$' })
+  const sourceFiles = await getFiles({ dir : pkgSrc, reName : '.(?:js|mjs)$' })
   const dirs = {}
 
-  await fs.rm(docPath, { recursive: true })
+  await fs.rm(docPath, { recursive : true })
 
   const tocFiles = []
 
-  await Promise.all(sourceFiles.map(async (file) => {
-    const fileContents = await fs.readFile(file, { encoding: 'utf8' })
+  await Promise.all(sourceFiles.map(async(file) => {
+    const fileContents = await fs.readFile(file, { encoding : 'utf8' })
     const pkgRelPath = file.slice(pkgSrcLength)
     const pkgRelDoc = pkgRelPath + '.html' // so we end up with file names like 'library.js.html'
     const docFilePath = fsPath.join(docPath, pkgRelDoc)
@@ -61,10 +60,10 @@ const func = ({ app, model }) => async (req, res) => {
     tocFiles.push(pkgRelDoc)
 
     if (dirs[docDirPath] === undefined) {
-      await fs.mkdir(docDirPath, { recursive: true })
+      await fs.mkdir(docDirPath, { recursive : true })
       dirs[docDirPath] = true
     }
-    
+
     const htmlifiedSource = htmlifySource(fileContents, pkgRelPath)
 
     return fs.writeFile(docFilePath, htmlifiedSource)
@@ -96,9 +95,9 @@ const func = ({ app, model }) => async (req, res) => {
 }
 
 const extToType = {
-  js: 'javascript',
-  jsx: 'javascript',
-  mjs: 'javascript'
+  js  : 'javascript',
+  jsx : 'javascript',
+  mjs : 'javascript'
 }
 
 const htmlifySource = (rawContent, pkgRelPath) => {
@@ -106,7 +105,7 @@ const htmlifySource = (rawContent, pkgRelPath) => {
   const fileType = extToType[fileExt] || fileExt
   const title = fsPath.basename(pkgRelPath)
 
-  let html = `<html>
+  const html = `<html>
   <head>
     <title>${title}</title>
 
@@ -132,7 +131,7 @@ const htmlifySource = (rawContent, pkgRelPath) => {
   </head>
   <body>
     <pre><code>
-${hljs.highlight(rawContent, { language: fileType }).value}
+${hljs.highlight(rawContent, { language : fileType }).value}
     </code></pre>
   </body>
 </html>`
