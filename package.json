@@ -36,5 +36,8 @@
     "highlight.js": "^11.7.0",
     "natural-sort": "^1.0.0",
     "walkdir": "^0.4.1"
+  },
+  "dependencies": {
+    "shelljs": "^0.8.5"
   }
 }
