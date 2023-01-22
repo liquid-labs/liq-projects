@@ -1,4 +1,3 @@
-// TODO: this handler should move to liq-projects
 import * as fs from 'node:fs/promises'
 
 import shell from 'shelljs'
@@ -29,9 +28,9 @@ const parameters = [
     description   : `Sets the license string for the newly created package. If not provided, then defaults to org setting 'ORG_DEFAULT_LICENSE' if set and '${DEFAULT_LICENSE}' otherwise.`
   },
   {
-    name : 'noCleanup',
-    isBoolean: true,
-    description: 'By default, on error, the process will attempt to cleanup any artifacts created and restore everything to the state prior to invocation. If `noCleanup` is specified this behavior is suppressed.'
+    name        : 'noCleanup',
+    isBoolean   : true,
+    description : 'By default, on error, the process will attempt to cleanup any artifacts created and restore everything to the state prior to invocation. If `noCleanup` is specified this behavior is suppressed.'
   },
   {
     name        : 'noFork',
@@ -104,13 +103,13 @@ const func = ({ app, model, reporter }) => {
           failures.push(desc)
         }
       }
-      
+
       res.status(status).type('text/plain')
         .send(msg + '\n\n'
-        + 'Cleanup appears to have ' 
-          + (failures.length === 0 
-              ? 'succeeded;\n' + successes.join(' succeeded\n') + ' succeeded' 
-              : 'failed;\n' + failures.join(' failed\n') + ' failed'))
+        + 'Cleanup appears to have '
+          + (failures.length === 0
+            ? 'succeeded;\n' + successes.join(' succeeded\n') + ' succeeded'
+            : 'failed;\n' + failures.join(' failed\n') + ' failed'))
 
       return failures.length === 0
     }
