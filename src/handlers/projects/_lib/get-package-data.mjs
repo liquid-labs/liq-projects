@@ -6,6 +6,7 @@ const getPackageData = async({ localOrgKey, localProjectName, requireImplements,
   const liqPlayground = process.env.LIQ_HOME || fsPath.join(process.env.HOME, '.liq', 'playground')
   const projectPath = fsPath.join(liqPlayground, localOrgKey, localProjectName)
   const projectPkgPath = fsPath.join(projectPath, 'package.json')
+  // TODO: this is incorrect; the org key is independent from (though often coordinated with) the GitHub org name
   const projectFQN = localOrgKey + '/' + localProjectName
   if (!existsSync(projectPkgPath)) {
     res
