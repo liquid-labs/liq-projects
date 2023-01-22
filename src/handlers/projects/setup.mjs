@@ -35,38 +35,31 @@ const parameters = [
 parameters.sort((a, b) => a.name.localeCompare(b.name))
 Object.freeze(parameters)
 
-const func = ({ app, model, reporter }) => {
-  app.commonPathResolvers.newProjectName = {
-    optionsFetcher : () => [],
-    bitReString    : '[a-zA-Z][a-zA-Z0-9-]*'
-  }
+const func = ({ app, model, reporter }) => async(req, res) => {
+  const org = getOrgFromKey({ model, params : req.vars, res })
+  if (org === false) return
 
-  return async(req, res) => {
-    const org = getOrgFromKey({ model, params : req.vars, res })
-    if (org === false) return
+  if (!checkGitHubSSHAccess({ res })) return // the check will handle user feedback
+  if (!(await checkGitHubAPIAccess({ res }))) return // ditto
 
-    if (!checkGitHubSSHAccess({ res })) return // the check will handle user feedback
-    if (!(await checkGitHubAPIAccess({ res }))) return // ditto
+  const {
+    noDeleteLabels = false,
+    noUpdateLabels = false,
+    orgKey,
+    localProjectName,
+    projectPath,
+    skipLabels = false,
+    skipMilestones = false,
+    unpublished = false
+  } = req.vars
 
-    const {
-      noDeleteLabels = false,
-      noUpdateLabels = false,
-      orgKey,
-      localProjectName,
-      projectPath,
-      skipLabels = false,
-      skipMilestones = false,
-      unpublished = false
-    } = req.vars
+  const projectName = orgKey + '/' + localProjectName
 
-    const projectName = orgKey + '/' + localProjectName
+  const report = []
+  if (skipLabels !== true) setupGitHubLabels({ noDeleteLabels, noUpdateLabels, projectName, report })
+  if (skipMilestones !== true) await setupGitHubMilestones({ model, projectName, projectPath, report, unpublished })
 
-    const report = []
-    if (skipLabels !== true) setupGitHubLabels({ noDeleteLabels, noUpdateLabels, projectName, report })
-    if (skipMilestones !== true) await setupGitHubMilestones({ model, projectName, projectPath, report, unpublished })
-
-    res.type('text/plain').send(report.join('\n'))
-  }
+  res.type('text/plain').send(report.join('\n'))
 }
 
 export {
