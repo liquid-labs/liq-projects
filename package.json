@@ -33,6 +33,8 @@
   },
   "devDependencies": {
     "@liquid-labs/catalyst-scripts": "^1.0.0-alpha.57",
+    "@liquid-labs/federated-json": "^1.0.0-alpha.31",
+    "@liquid-labs/liq-handlers-lib": "^1.0.0-alpha.12",
     "highlight.js": "^11.7.0",
     "natural-sort": "^1.0.0"
   },
