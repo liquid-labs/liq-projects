@@ -29,6 +29,11 @@ const parameters = [
     description   : `Sets the license string for the newly created package. If not provided, then defaults to org setting 'ORG_DEFAULT_LICENSE' if set and '${DEFAULT_LICENSE}' otherwise.`
   },
   {
+    name : 'noCleanup',
+    isBoolean: true,
+    description: 'By default, on error, the process will attempt to cleanup any artifacts created and restore everything to the state prior to invocation. If `noCleanup` is specified this behavior is suppressed.'
+  },
+  {
     name        : 'noFork',
     isBoolean   : true,
     description : 'Suppresses default behavior of proactively creating workspace fork for public repos.'
@@ -64,6 +69,7 @@ const func = ({ app, model, reporter }) => {
       license,
       orgKey,
       newProjectName,
+      noCleanup,
       noFork = false,
       public : publicRepo = false,
       version = DEFAULT_VERSION
@@ -79,28 +85,38 @@ const func = ({ app, model, reporter }) => {
     // else we are good to proceed
     const cleanupFuncs = []
     const cleanup = async({ msg, res, status }) => {
+      if (noCleanup === true) {
+        res.status(status).type('text/plain').send(`Failed to fully create '${newProjectName}; no cleanup performed.`)
+        return true
+      }
+
+      const successes = []
       const failures = []
       let success = true
       for (const [func, desc] of cleanupFuncs) {
         try {
           success = await func() && success
           if (!success) failures.push(desc)
+          else successes.push(desc)
         }
         catch (e) {
           console.log(e)
           failures.push(desc)
         }
       }
-      if (res) {
-        res.status(status).type('text/plain')
-          .send(msg + '\n\n'
-          + 'Cleanup appears to have ' + (failures.length === 0 ? 'succeeded' : 'failed;\n' + failures.join(' failed\n') + ' failed'))
-      }
+      
+      res.status(status).type('text/plain')
+        .send(msg + '\n\n'
+        + 'Cleanup appears to have ' 
+          + (failures.length === 0 
+              ? 'succeeded;\n' + successes.join(' succeeded\n') + ' succeeded' 
+              : 'failed;\n' + failures.join(' failed\n') + ' failed'))
 
       return failures.length === 0
     }
 
     // set up the staging directory
+    reporter.log(`Creating staging directory '${newProjectName}'.`)
     const stagingDir = `${app.liqHome()}/tmp/liq-core/project-staging/${newProjectName}`
     await fs.mkdir(stagingDir, { recursive : true })
 
@@ -112,6 +128,7 @@ const func = ({ app, model, reporter }) => {
       'remove staging dir'
     ])
 
+    reporter.log(`Initializing staging directory '${newProjectName}'.`)
     const initResult = shell.exec(`cd "${stagingDir}" && git init --quiet . && npm init -y > /dev/null`)
     if (initResult.code !== 0) {
       await cleanup({
@@ -122,6 +139,7 @@ const func = ({ app, model, reporter }) => {
       return
     }
 
+    reporter.log(`Updating '${newProjectName}' package.json...`)
     const packagePath = stagingDir + '/package.json'
     const packageJSON = readFJSON(packagePath)
 
@@ -145,6 +163,7 @@ const func = ({ app, model, reporter }) => {
 
     writeFJSON({ data : packageJSON, file : packagePath, noMeta : true })
 
+    reporter.log(`Committing initial package.json to '${newProjectName}'...`)
     const initCommitResult = shell.exec(`cd "${stagingDir}" && git add package.json && git commit -m "package initialization"`)
     if (initCommitResult.code !== 0) {
       await cleanup({
@@ -156,6 +175,7 @@ const func = ({ app, model, reporter }) => {
     }
     report.push(`Initialized local repository for project '${qualifiedName}'.`)
 
+    reporter.log(`Creating github repository for '${newProjectName}'...`)
     const creationOpts = '--remote-name origin'
     + ` -d "${description}"`
     + (publicRepo === true ? '' : ' --private')
@@ -178,11 +198,14 @@ const func = ({ app, model, reporter }) => {
       'delete GitHu repo'
     ])
 
+    reporter.log(`Pushing '${newProjectName}' local updates to GitHub...`)
     let retry = 3 // will try a total of four times
-    let pushResult = shell.exec('git push --all origin')
+    const pushCmd = `cd "${stagingDir}" && git push --all origin`
+    let pushResult = shell.exec(pushCmd)
     while (pushResult.code !== 0 && retry > 0) {
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      pushResult = shell.exec('git push --all origin')
+      reporter.log('Pausing for GitHub to catch up...')
+      await new Promise(resolve => setTimeout(resolve, 2500))
+      pushResult = shell.exec(pushCmd)
       retry -= 1
     }
     if (pushResult.code !== 0) {
