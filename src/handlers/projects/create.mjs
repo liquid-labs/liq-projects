@@ -7,11 +7,9 @@ import { getOrgFromKey } from '@liquid-labs/liq-handlers-lib'
 
 import { checkGitHubAPIAccess, checkGitHubSSHAccess } from './_lib/github-lib'
 import { commonProjectSetupParameters } from './_lib/common-project-setup-parameters'
+import { DEFAULT_LICENSE, DEFAULT_VERSION, GITHUB_REPO_KEY } from './_lib/common-constants'
 import { setupGitHubLabels } from './_lib/setup-github-labels'
 import { setupGitHubMilestones } from './_lib/setup-github-milestones'
-
-const DEFAULT_LICENSE = 'UNLICENSED'
-const DEFAULT_VERSION = '1.0.0-alpha.0'
 
 const method = 'post'
 const paths = [
@@ -54,8 +52,6 @@ const parameters = [
 ]
 parameters.sort((a, b) => a.name.localeCompare(b.name))
 Object.freeze(parameters)
-
-const GITHUB_REPO_KEY = 'core.GITHUB_ORG_NAME'
 
 const func = ({ app, model, reporter }) => {
   app.commonPathResolvers.newProjectName = {
