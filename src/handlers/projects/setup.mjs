@@ -1,6 +1,7 @@
 import { getOrgFromKey } from '@liquid-labs/liq-handlers-lib'
 
 import { checkGitHubAPIAccess, checkGitHubSSHAccess } from './_lib/github-lib'
+import { commonProjectSetupParameters } from './_lib/common-project-setup-parameters'
 import { setupGitHubLabels } from './_lib/setup-github-labels'
 import { setupGitHubMilestones } from './_lib/setup-github-milestones'
 
@@ -25,21 +26,14 @@ const parameters = [
     description : 'Path to local project to work with. Can be used to specify projects in non-default locations. Otherwise, the process will look in the liq playground under the `&lt;orgKey&gt;/&lt;localProjectName&gt;`.'
   },
   {
-    name        : 'skipLabels',
-    isBoolean   : true,
-    description : 'If true, then the entire label normalization process will be skipped.'
-  },
-  {
-    name        : 'skipMilestones',
-    isBoolean   : true,
-    description : 'If true, the milestone setup process is skipped.'
-  },
-  {
     name        : 'unpbulished',
     isBoolean   : true,
-    description : 'TODO: ???'
-  }
+    description : 'Set to true for new or otherwise unpblushed packages. By default, the process will query npm to get the latest version of the package for use with milestones setup. If set false, then this query is skipped and the local package data is used.'
+  },
+  ...commonProjectSetupParameters
 ]
+parameters.sort((a, b) => a.name.localeCompare(b.name))
+Object.freeze(parameters)
 
 const func = ({ app, model, reporter }) => {
   app.commonPathResolvers.newProjectName = {

@@ -34,17 +34,19 @@ const defaultLabels = [
 ]
 
 const setupGitHubLabels = ({ org, noDeleteLabels, noUpdateLabels, projectName, report }) => {
+  console.log(`Setting up labebls for '${projectName}'`)
   report.push(`Setting up labebls for '${projectName}'`)
 
   const projectLabels = org?.projects?.DEFAULT_LABELS || defaultLabels
 
   if (projectLabels === defaultLabels) {
+    console.log('No project labels defined; using default label set...')
     report.push('No project labels defined; using default label set...')
   }
 
   const currLabelDataString = shell.exec(`hub api "/repos/${projectName}/labels"`)
   const currLabelData = JSON.parse(currLabelDataString)
-  const currLabelNames = currLabelData.map((l) => l.name)
+  const currLabelNames = currLabelData?.map((l) => l.name) || []
 
   const excessLabelNames = currLabelNames.filter((n) => !projectLabels.some((l) => l.name === n))
   const missinglabels = projectLabels.filter(({ name: n }) => !currLabelNames.some((l) => l === n))
@@ -60,7 +62,8 @@ const setupGitHubLabels = ({ org, noDeleteLabels, noUpdateLabels, projectName, r
   }
 
   for (const { name, description, color } of missinglabels) {
-    report.push(`Adding label '${name}...`)
+    console.log(`Adding label '${name}...`)
+    report.push(`Adding label '<em>${name}<rst>...`)
     const result = shell.exec(`hub api -X POST "/repos/${projectName}/labels" \\
         -f name="${name}" \\
         -f description="${description}" \\
@@ -70,6 +73,7 @@ const setupGitHubLabels = ({ org, noDeleteLabels, noUpdateLabels, projectName, r
     }
     else {
       labelsSynced = false
+      console.log(`  There was an issue creating label '${name}': ${result.stderr}`)
       report.push(`  There was an issue creating label '${name}': ${result.stderr}`)
     }
   }
@@ -78,17 +82,20 @@ const setupGitHubLabels = ({ org, noDeleteLabels, noUpdateLabels, projectName, r
   for (const { name, description, color } of projectLabels) {
     const { description: currDesc, color: currColor } = currLabelData.find((l) => l.name === name)
     if (description !== currDesc || color !== currColor) {
-      report.push(`Updating definition for label '${name}'...`)
+      console.log(`Updating definition for label '${name}'...`)
+      report.push(`Updating definition for label '<em>${name}<rst>'...`)
       const result = shell.exec(`hub api -X PATCH "/repos/${projectName}/labels/${name}" \\
         -f description="${description}" \\
         -f color="${color}"`)
       if (result.code !== 0) {
         labelsSynced = false
-        report.push(`There was an error updating label '${name}: ${result.stderr}`)
+        console.log(`There was an error updating label '${name}: ${result.stderr}`)
+        report.push(`There was an error updating label '<em>${name}<rst>: ${result.stderr}`)
       }
     }
   }
 
+  console.log('Labels ' + (labelsSynced === true ? '' : 'not ') + 'synchronized.')
   report.push('Labels ' + (labelsSynced === true ? '' : 'not ') + 'synchronized.')
 }
 

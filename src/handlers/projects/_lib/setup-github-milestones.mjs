@@ -9,7 +9,7 @@ const setupGitHubMilestones = async({ model, projectName, projectPath, report, u
 
   const milestones = ['backlog']
   let currVersion
-  if (unpublished === false) {
+  if (unpublished === false) { // i.e., is published
     const result = shell.exec(`npm info '${projectName}'`)
     if (result.code !== 0) {
       report.push(`<error>Did not find npm package '${projectName}'.<rst>`)
