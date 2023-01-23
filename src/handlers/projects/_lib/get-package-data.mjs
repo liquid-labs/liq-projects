@@ -2,12 +2,13 @@ import { existsSync } from 'node:fs'
 import * as fs from 'node:fs/promises'
 import * as fsPath from 'node:path'
 
-const getPackageData = async({ localProjectName, requireImplements, res }) => {
-  const liqPlayground = process.env.LIQ_HOME || fsPath.join(process.env.HOME, '.liq', 'playground')
-  const projectPath = fsPath.join(liqPlayground, localOrgKey, localProjectName)
+const getPackageData = async ({ localOrgKey, localProjectName, projectPath, requireImplements, res }) => {
+  const liqPlayground = fsPath.join(process.env.LIQ_HOME || fsPath.join(process.env.HOME, '.liq'), 'playground')
+  projectPath = projectPath || fsPath.join(liqPlayground, localOrgKey, localProjectName)
   const projectPkgPath = fsPath.join(projectPath, 'package.json')
   
   if (!existsSync(projectPkgPath)) {
+    console.log(1)
     res
       .status(404/* Entity Not Found */)
       .setHeader('content-type', 'text/terminal')
@@ -30,12 +31,13 @@ const getPackageData = async({ localProjectName, requireImplements, res }) => {
 
   let projectFQN = packageSpec.name
   if (projectFQN.startsWith('@')) projectFQN = projectFQN.slice(1)
-  let [ githubOrg ] = projectFQN.split('/')
-  if (githubOrg === localProjectName) githubOrg = undefined
+  const githubOrg = (packageSpec.repository.url || packageSpec.repository)
+    .replace(/^.+?\/([^/]+)\/[^/]+(?:.git)$/, '$1')
+  const githubProjectName = githubOrg + '/' + localProjectName
 
   for (const reqImpl of requireImplements || []) {
-    const documentationImplemented = packageSpec?.liq?.tags?.includes(reqImpl)
-    if (documentationImplemented !== true) {
+    const isImplemented = packageSpec?.liq?.tags?.includes(reqImpl)
+    if (isImplemented !== true) {
       res
         .status(400)
         .setHeader('content-type', 'text/terminal')
@@ -46,6 +48,7 @@ const getPackageData = async({ localProjectName, requireImplements, res }) => {
 
   return {
     githubOrg,
+    githubProjectName,
     localProjectName,
     packageSpec,
     projectFQN,
