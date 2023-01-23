@@ -3,14 +3,14 @@ import { getOrgFromKey } from '@liquid-labs/liq-handlers-lib'
 import { checkGitHubAPIAccess, checkGitHubSSHAccess } from './_lib/github-lib'
 import { commonProjectSetupParameters } from './_lib/common-project-setup-parameters'
 import { commonProjectPathParameters } from './_lib/common-project-path-parameters'
-import { GITHUB_REPO_KEY } from '._lib/common-constants'
+import { GITHUB_REPO_KEY } from './_lib/common-constants'
 import { setupGitHubLabels } from './_lib/setup-github-labels'
 import { setupGitHubMilestones } from './_lib/setup-github-milestones'
 
 const method = 'post'
 const paths = [
-  ['projects', ':orgKey', ':localProjectName', 'setup'],
-  ['orgs', ':orgKey', 'projects', ':localProjectName', 'setup']
+  ['projects', ':localOrgKey', ':localProjectName', 'setup'],
+  ['orgs', ':localOrgKey', 'projects', ':localProjectName', 'setup']
 ]
 const parameters = [
   {
@@ -35,7 +35,7 @@ parameters.sort((a, b) => a.name.localeCompare(b.name))
 Object.freeze(parameters)
 
 const func = ({ app, model, reporter }) => async(req, res) => {
-  const org = getOrgFromKey({ model, params : req.vars, res })
+  const org = getOrgFromKey({ model, orgKey: localOrgKey, res })
   if (org === false) return
 
   if (!checkGitHubSSHAccess({ res })) return // the check will handle user feedback
@@ -44,7 +44,6 @@ const func = ({ app, model, reporter }) => async(req, res) => {
   const {
     noDeleteLabels = false,
     noUpdateLabels = false,
-    orgKey,
     localProjectName,
     projectPath,
     skipLabels = false,

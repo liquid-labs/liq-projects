@@ -13,8 +13,8 @@ import { setupGitHubMilestones } from './_lib/setup-github-milestones'
 
 const method = 'post'
 const paths = [
-  ['projects', ':orgKey', ':newProjectName', 'create'],
-  ['orgs', ':orgKey', 'projects', ':newProjectName', 'create']
+  ['projects', ':localOrgKey', ':newProjectName', 'create'],
+  ['orgs', ':localOrgKey', 'projects', ':newProjectName', 'create']
 ]
 const parameters = [
   {
@@ -60,7 +60,7 @@ const func = ({ app, model, reporter }) => {
   }
 
   return async(req, res) => {
-    const org = getOrgFromKey({ model, params : req.vars, res })
+    const org = getOrgFromKey({ model, orgKey: localOrgKey, res })
     if (org === false) return
 
     const report = []
@@ -68,7 +68,7 @@ const func = ({ app, model, reporter }) => {
     const {
       description,
       license,
-      orgKey,
+      localOrgKey,
       newProjectName,
       noCleanup,
       noFork = false,
@@ -79,7 +79,7 @@ const func = ({ app, model, reporter }) => {
     } = req.vars
     const orgGithubName = org.getSetting(GITHUB_REPO_KEY)
     if (!orgGithubName) {
-      res.status(400).type('text/plain').send(`'${GITHUB_REPO_KEY}' not defined for org '${orgKey}'.`)
+      res.status(400).type('text/plain').send(`'${GITHUB_REPO_KEY}' not defined for org '${localOrgKey}'.`)
       return
     }
 
