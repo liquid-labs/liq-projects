@@ -17,7 +17,7 @@ const help = {
 }
 
 const method = 'put'
-const path = ['playground', 'projects', ':localOrgKey', ':localProjectName', 'document']
+const path = ['playground', 'projects', ':orgKey', ':localProjectName', 'document']
 const parameters = [
   {
     name        : 'ignoreDocumentationImplementation',
@@ -27,13 +27,13 @@ const parameters = [
 ]
 
 const func = ({ app, model }) => async(req, res) => {
-  const { localOrgKey, ignoreDocumentationImplementation, localProjectName } = req.vars
+  const { orgKey, ignoreDocumentationImplementation, localProjectName } = req.vars
 
   const requireImplements = ignoreDocumentationImplementation === true
     ? []
     : ['implements:documentation']
 
-  const pkgData = await getPackageData({ localOrgKey, localProjectName, requireImplements, res })
+  const pkgData = await getPackageData({ orgKey, localProjectName, requireImplements, res })
   if (pkgData === false) return // error results already sent
   // else, we are good to start generating documentation!
 

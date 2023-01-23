@@ -9,8 +9,8 @@ import { setupGitHubMilestones } from './_lib/setup-github-milestones'
 
 const method = 'post'
 const paths = [
-  ['projects', ':localOrgKey', ':localProjectName', 'setup'],
-  ['orgs', ':localOrgKey', 'projects', ':localProjectName', 'setup']
+  ['projects', ':orgKey', ':localProjectName', 'setup'],
+  ['orgs', ':orgKey', 'projects', ':localProjectName', 'setup']
 ]
 const parameters = [
   {
@@ -35,7 +35,7 @@ parameters.sort((a, b) => a.name.localeCompare(b.name))
 Object.freeze(parameters)
 
 const func = ({ app, model, reporter }) => async(req, res) => {
-  const org = getOrgFromKey({ model, orgKey: localOrgKey, res })
+  const org = getOrgFromKey({ model, orgKey: orgKey, res })
   if (org === false) return
 
   if (!checkGitHubSSHAccess({ res })) return // the check will handle user feedback

@@ -2,9 +2,9 @@ import { existsSync } from 'node:fs'
 import * as fs from 'node:fs/promises'
 import * as fsPath from 'node:path'
 
-const getPackageData = async ({ localOrgKey, localProjectName, projectPath, requireImplements, res }) => {
+const getPackageData = async ({ orgKey, localProjectName, projectPath, requireImplements, res }) => {
   const liqPlayground = fsPath.join(process.env.LIQ_HOME || fsPath.join(process.env.HOME, '.liq'), 'playground')
-  projectPath = projectPath || fsPath.join(liqPlayground, localOrgKey, localProjectName)
+  projectPath = projectPath || fsPath.join(liqPlayground, orgKey, localProjectName)
   const projectPkgPath = fsPath.join(projectPath, 'package.json')
   
   if (!existsSync(projectPkgPath)) {

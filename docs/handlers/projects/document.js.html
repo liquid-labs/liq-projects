@@ -44,7 +44,7 @@ hljs.<span class="hljs-title function_">registerLanguage</span>(<span class="hlj
 }
 
 <span class="hljs-keyword">const</span> method = <span class="hljs-string">&#x27;put&#x27;</span>
-<span class="hljs-keyword">const</span> path = [ <span class="hljs-string">&#x27;playground&#x27;</span>, <span class="hljs-string">&#x27;projects&#x27;</span>, <span class="hljs-string">&#x27;:localOrgKey&#x27;</span>, <span class="hljs-string">&#x27;:localProjectName&#x27;</span>, <span class="hljs-string">&#x27;document&#x27;</span> ]
+<span class="hljs-keyword">const</span> path = [ <span class="hljs-string">&#x27;playground&#x27;</span>, <span class="hljs-string">&#x27;projects&#x27;</span>, <span class="hljs-string">&#x27;:orgKey&#x27;</span>, <span class="hljs-string">&#x27;:localProjectName&#x27;</span>, <span class="hljs-string">&#x27;document&#x27;</span> ]
 <span class="hljs-keyword">const</span> parameters = [
   {
     <span class="hljs-attr">name</span>: <span class="hljs-string">&#x27;ignoreDocumentationImplementation&#x27;</span>,
@@ -54,13 +54,13 @@ hljs.<span class="hljs-title function_">registerLanguage</span>(<span class="hlj
 ]
 
 <span class="hljs-keyword">const</span> <span class="hljs-title function_">func</span> = (<span class="hljs-params">{ app, model }</span>) =&gt; <span class="hljs-keyword">async</span> (req, res) =&gt; {
-  <span class="hljs-keyword">const</span> { localOrgKey, ignoreDocumentationImplementation, localProjectName } = req.<span class="hljs-property">vars</span>
+  <span class="hljs-keyword">const</span> { orgKey, ignoreDocumentationImplementation, localProjectName } = req.<span class="hljs-property">vars</span>
 
   <span class="hljs-keyword">const</span> requireImplements = ignoreDocumentationImplementation === <span class="hljs-literal">true</span>
     ? []
     : [ <span class="hljs-string">&#x27;implements:documentation&#x27;</span> ]
 
-  <span class="hljs-keyword">const</span> pkgData = <span class="hljs-keyword">await</span> <span class="hljs-title function_">getPackageData</span>({ localOrgKey, localProjectName, requireImplements, res })
+  <span class="hljs-keyword">const</span> pkgData = <span class="hljs-keyword">await</span> <span class="hljs-title function_">getPackageData</span>({ orgKey, localProjectName, requireImplements, res })
   <span class="hljs-keyword">if</span> (pkgData === <span class="hljs-literal">false</span>) <span class="hljs-keyword">return</span> <span class="hljs-comment">// error results already sent</span>
   <span class="hljs-comment">// else, we are good to start generating documentation!</span>
 

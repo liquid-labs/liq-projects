@@ -11,8 +11,8 @@ import { setupGitHubMilestones } from './_lib/setup-github-milestones'
 
 const method = 'post'
 const paths = [
-  ['projects', ':localOrgKey', ':localProjectName', 'rename'],
-  ['orgs', ':localOrgKey', 'projects', ':localProjectName', 'rename']
+  ['projects', ':orgKey', ':localProjectName', 'rename'],
+  ['orgs', ':orgKey', 'projects', ':localProjectName', 'rename']
 ]
 const parameters = [
   {
@@ -34,13 +34,13 @@ const func = ({ app, model, reporter }) => async (req, res) => {
   if (!(await checkGitHubAPIAccess({ res }))) return // ditto
 
   const {
-    localOrgKey,
+    orgKey,
     localProjectName,
     newBaseName,
     noRenameDir=false,
   } = req.vars
 
-  const pkgData = await getPackageData({ localOrgKey, localProjectName, projectPath: req.vars.projectPath, res })
+  const pkgData = await getPackageData({ orgKey, localProjectName, projectPath: req.vars.projectPath, res })
   if (pkgData === false) return
   let { githubOrg, githubProjectName, projectPath } = pkgData
 
