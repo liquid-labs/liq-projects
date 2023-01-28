@@ -4,12 +4,15 @@ import shell from 'shelljs'
 
 import { readFJSON, writeFJSON } from '@liquid-labs/federated-json'
 import { getOrgFromKey } from '@liquid-labs/liq-handlers-lib'
+import { 
+  checkGitHubAPIAccess, 
+  checkGitHubSSHAccess, 
+  setupGitHubLabels, 
+  setupGitHubMilestones 
+} from '@liquid-labs/github-toolkit'
 
-import { checkGitHubAPIAccess, checkGitHubSSHAccess } from './_lib/github-lib'
 import { commonProjectSetupParameters } from './_lib/common-project-setup-parameters'
 import { DEFAULT_LICENSE, DEFAULT_VERSION, GITHUB_REPO_KEY } from './_lib/common-constants'
-import { setupGitHubLabels } from './_lib/setup-github-labels'
-import { setupGitHubMilestones } from './_lib/setup-github-milestones'
 
 const method = 'post'
 const paths = [

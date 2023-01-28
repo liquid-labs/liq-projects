@@ -39,6 +39,7 @@
     "natural-sort": "^1.0.0"
   },
   "dependencies": {
+    "@liquid-labs/github-toolkit": "file:.yalc/@liquid-labs/github-toolkit",
     "shelljs": "^0.8.5"
   }
 }

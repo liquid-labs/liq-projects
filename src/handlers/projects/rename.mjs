@@ -3,11 +3,10 @@ import * as fsPath from 'node:path'
 
 import shell from 'shelljs'
 
-import { checkGitHubAPIAccess } from './_lib/github-lib'
+import { checkGitHubAPIAccess } from '@liquid-labs/github-toolkit'
+
 import { commonProjectPathParameters } from './_lib/common-project-path-parameters'
 import { getPackageData } from './_lib/get-package-data'
-import { setupGitHubLabels } from './_lib/setup-github-labels'
-import { setupGitHubMilestones } from './_lib/setup-github-milestones'
 
 const method = 'post'
 const paths = [
