@@ -60,7 +60,7 @@ const func = ({ app, model, reporter }) => {
   }
 
   return async(req, res) => {
-    const org = getOrgFromKey({ model, orgKey: orgKey, res })
+    const org = getOrgFromKey({ model, params : req.vars, res })
     if (org === false) return
 
     const report = []

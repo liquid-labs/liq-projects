@@ -35,7 +35,7 @@ parameters.sort((a, b) => a.name.localeCompare(b.name))
 Object.freeze(parameters)
 
 const func = ({ app, model, reporter }) => async(req, res) => {
-  const org = getOrgFromKey({ model, orgKey: orgKey, res })
+  const org = getOrgFromKey({ model, params : req.vars, res })
   if (org === false) return
 
   if (!checkGitHubSSHAccess({ res })) return // the check will handle user feedback
