@@ -40,6 +40,7 @@
   },
   "dependencies": {
     "@liquid-labs/github-toolkit": "file:.yalc/@liquid-labs/github-toolkit",
+    "http-errors": "^2.0.0",
     "shelljs": "^0.8.5"
   }
 }
