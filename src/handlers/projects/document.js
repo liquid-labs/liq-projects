@@ -17,7 +17,10 @@ const help = {
 }
 
 const method = 'put'
-const path = ['playground', 'projects', ':orgKey', ':localProjectName', 'document']
+const paths = [
+  ['projects', ':orgKey', ':localProjectName', 'document'],
+  ['orgs', ':orgKey', 'projects', ':localProjectName', 'document']
+]
 const parameters = [
   {
     name        : 'ignoreDocumentationImplementation',
@@ -139,4 +142,4 @@ ${hljs.highlight(rawContent, { language : fileType }).value}
   return html
 }
 
-export { func, help, method, parameters, path }
+export { func, help, method, parameters, paths }
