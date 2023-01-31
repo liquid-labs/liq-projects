@@ -29,8 +29,8 @@ const parameters = [
 parameters.sort((a, b) => a.name.localeCompare(b.name))
 Object.freeze(parameters)
 
-const func = ({ app, model, reporter }) => async (req, res) => {
-  if (!(await checkGitHubAPIAccess({ res }))) return // ditto
+const func = ({ app, model, reporter }) => async (req, res, next) => {
+  await checkGitHubAPIAccess() // throws on failure
 
   const {
     orgKey,
