@@ -36,8 +36,7 @@ const func = ({ app, model }) => async(req, res) => {
     ? []
     : ['implements:documentation']
 
-  const pkgData = await getPackageData({ orgKey, localProjectName, requireImplements, res })
-  if (pkgData === false) return // error results already sent
+  const pkgData = await getPackageData({ orgKey, localProjectName, requireImplements })
   // else, we are good to start generating documentation!
 
   const { projectFQN, projectPath } = pkgData
