@@ -21,12 +21,6 @@ build: $(BUILD_TARGETS)
 
 all: build
 
-foo:
-	@echo $(LIQ_PROJECTS_TEST_SRC_DATA)
-
-bar:
-	@echo $(LIQ_PROJECTS_TEST_BUILT_DATA)
-
 $(LIQ_PROJECTS): package.json $(LIQ_PROJECTS_FILES)
 	JS_SRC=$(LIQ_PROJECTS_SRC) $(CATALYST_SCRIPTS) build
 
