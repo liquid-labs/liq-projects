@@ -93,17 +93,17 @@ const func = ({ app, model, reporter }) => {
     await checkGitHubAPIAccess({ reporter }) // ditto
 
     // else we are good to proceed
-    const cleanupFuncs = []
+    const cleanupFuncs = {}
     const cleanup = async({ msg, res, status }) => {
       if (noCleanup === true) {
-        res.status(status).type('text/plain').send(`Failed to fully create '${newProjectName}; no cleanup performed.`)
+        res.status(status).type('text/plain').send(`Failed to fully create '${newProjectName}'; no cleanup performed: ${msg}`)
         return true
       }
 
       const successes = []
       const failures = []
       let success = true
-      for (const [func, desc] of cleanupFuncs) {
+      for (const [func, desc] of Object.values(cleanupFuncs)) {
         try {
           success = await func() && success
           if (!success) failures.push(desc)
@@ -130,17 +130,17 @@ const func = ({ app, model, reporter }) => {
 
     try {
       // set up the staging directory
-      reporter.push(`Creating staging directory '${newProjectName}'.`)
+      reporter.push(`Creating staging directory '${newProjectName}': <code>${stagingDir}<rst>.`)
       
       await fs.mkdir(stagingDir, { recursive : true })
 
-      cleanupFuncs.push([
+      cleanupFuncs['stagingDir'] = [
         async() => {
           await fs.rm(stagingDir, { recursive : true })
           return true
         },
         'remove staging dir'
-      ])
+      ]
 
       reporter.push(`Initializing staging directory '${newProjectName}'.`)
       const initResult = shell.exec(`cd "${stagingDir}" && git init --quiet . && npm init -y > /dev/null`)
@@ -203,20 +203,20 @@ const func = ({ app, model, reporter }) => {
       }
       reporter.push(`Created GitHub repo '${qualifiedName}'.`)
 
-      cleanupFuncs.push([
+      cleanupFuncs['githubRepo'] = [
         async() => {
           const delResult = shell.exec(`hub delete -y ${qualifiedName}`)
           return delResult.code === 0
         },
         'delete GitHub repo'
-      ])
+      ]
 
       reporter.push(`Pushing '${newProjectName}' local updates to GitHub...`)
-      let retry = 3 // will try a total of four times
+      let retry = 5 // will try a total of four times
       const pushCmd = `cd "${stagingDir}" && git push --all origin`
       let pushResult = shell.exec(pushCmd)
       while (pushResult.code !== 0 && retry > 0) {
-        reporter.push('Pausing for GitHub to catch up...')
+        reporter.push(`Pausing for GitHub to catch up (${retryCount}/5)...`)
         await new Promise(resolve => setTimeout(resolve, 2500))
         pushResult = shell.exec(pushCmd)
         retry -= 1
@@ -232,11 +232,11 @@ const func = ({ app, model, reporter }) => {
         else reporter.push('Failed to create personal workspace fork.')
       }
 
-      if (skipLabels !== true) setupGitHubLabels({ projectName : qualifiedName, reporter })
+      if (skipLabels !== true) await setupGitHubLabels({ projectFQN : qualifiedName, reporter })
       if (skipMilestones !== true) {
         await setupGitHubMilestones({
           model,
-          projectName : qualifiedName,
+          projectFQN : qualifiedName,
           projectPath : stagingDir,
           reporter,
           unpublished : true
@@ -245,6 +245,7 @@ const func = ({ app, model, reporter }) => {
     }
     catch (e) {
       await cleanup({ msg : `There was an error creating project '${qualifiedName}'; ${e.message}`, res, status : 500 })
+      return
     }
 
     await fs.rename(stagingDir, app.liqPlayground() + '/' + qualifiedName)

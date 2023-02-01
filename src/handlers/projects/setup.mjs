@@ -68,7 +68,7 @@ const func = ({ app, model, reporter }) => async(req, res) => {
   const projectFQN = githubOrg + '/' + localProjectName
 
   reporter = reporter?.isolate()
-  if (skipLabels !== true) setupGitHubLabels({ noDeleteLabels, noUpdateLabels, projectFQN, reporter })
+  if (skipLabels !== true) await setupGitHubLabels({ noDeleteLabels, noUpdateLabels, projectFQN, reporter })
   if (skipMilestones !== true) await setupGitHubMilestones({ model, projectFQN, projectPath, reporter, unpublished })
   if (noUpdateOriginName !== true) regularizeRemote({ projectPath, reporter })
   if (noUpdateMainBranch !== true) regularizeMainBranch({ projectFQN, projectPath, reporter })
