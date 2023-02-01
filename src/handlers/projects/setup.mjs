@@ -4,7 +4,7 @@ import { getOrgFromKey } from '@liquid-labs/liq-handlers-lib'
 import { 
   checkGitHubAPIAccess, 
   checkGitHubSSHAccess,
-  regulizeMainBranch,
+  regularizeMainBranch,
   regularizeRemote,
   setupGitHubLabels, 
   setupGitHubMilestones 
@@ -41,9 +41,6 @@ const parameters = [
 parameters.sort((a, b) => a.name.localeCompare(b.name))
 Object.freeze(parameters)
 
-const ORIGIN = 'origin'
-const MAIN = 'main'
-
 const func = ({ app, model, reporter }) => async(req, res) => {
   const org = getOrgFromKey({ model, params : req.vars, res })
   if (org === false) return
@@ -68,15 +65,15 @@ const func = ({ app, model, reporter }) => async(req, res) => {
   const projectPath = req.vars.projectPath
     || fsPath.join(process.env.HOME, '.liq', 'playground', orgKey, localProjectName)
   const githubOrg = org.getSetting(GITHUB_REPO_KEY)
-  const projectName = githubOrg + '/' + localProjectName
+  const projectFQN = githubOrg + '/' + localProjectName
 
   reporter = reporter?.isolate()
-  if (skipLabels !== true) setupGitHubLabels({ noDeleteLabels, noUpdateLabels, projectName, reporter })
-  if (skipMilestones !== true) await setupGitHubMilestones({ model, projectName, projectPath, reporter, unpublished })
-  if (noUpdateOriginName !== true) regularizeRemote({ path: projectPath, reporter })
-  if (noUpdateMainBranch !== true) regulizeMainBranch({ path: projectPath, reporter })
+  if (skipLabels !== true) setupGitHubLabels({ noDeleteLabels, noUpdateLabels, projectFQN, reporter })
+  if (skipMilestones !== true) await setupGitHubMilestones({ model, projectFQN, projectPath, reporter, unpublished })
+  if (noUpdateOriginName !== true) regularizeRemote({ projectPath, reporter })
+  if (noUpdateMainBranch !== true) regularizeMainBranch({ projectFQN, projectPath, reporter })
 
-  res.type('text/plain').send(report.taskReport.join('\n'))
+  res.type('text/plain').send(reporter.taskReport.join('\n'))
 }
 
 export {
