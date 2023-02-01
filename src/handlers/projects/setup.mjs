@@ -1,7 +1,11 @@
+import * as fsPath from 'node:path'
+
 import { getOrgFromKey } from '@liquid-labs/liq-handlers-lib'
 import { 
   checkGitHubAPIAccess, 
-  checkGitHubSSHAccess, 
+  checkGitHubSSHAccess,
+  regulizeMainBranch,
+  regularizeRemote,
   setupGitHubLabels, 
   setupGitHubMilestones 
 } from '@liquid-labs/github-toolkit'
@@ -17,14 +21,14 @@ const paths = [
 ]
 const parameters = [
   {
-    name        : 'noDeleteLabels',
+    name        : 'noUpdateMainBranch',
     isBoolean   : true,
-    description : 'If true, then only missing labels will be added and any existing labels will be kept in place. Existing labels with the same name will be updated unless `noUpdateLabels` is set.'
+    description : "If true, the main branch will not be renamed even if it not standard 'main'."
   },
   {
-    name        : 'noUpdateLabels',
+    name        : 'noUpdateOriginRemote',
     isBoolean   : true,
-    description : 'If true, then existing labels with the same name as the canonical label set will be left unchanged. Thtey will still be deleted, however, unless `noUpdateLabels` is set.'
+    description : "If true, the origin remote will not be renamed even if not standard 'origin'."
   },
   {
     name        : 'unpbulished',
@@ -37,31 +41,42 @@ const parameters = [
 parameters.sort((a, b) => a.name.localeCompare(b.name))
 Object.freeze(parameters)
 
+const ORIGIN = 'origin'
+const MAIN = 'main'
+
 const func = ({ app, model, reporter }) => async(req, res) => {
   const org = getOrgFromKey({ model, params : req.vars, res })
   if (org === false) return
 
-  if (!checkGitHubSSHAccess({ res })) return // the check will handle user feedback
-  if (!(await checkGitHubAPIAccess({ res }))) return // ditto
+  reporter?.push('Checking GitHub SSH access...')
+  checkGitHubSSHAccess({ reporter }) // the check will throw HTTP errors if there's a problem
+  reporter?.push('Checking GitHub API access..')
+  await checkGitHubAPIAccess({ reporter }) // ditto
 
   const {
     noDeleteLabels = false,
     noUpdateLabels = false,
+    noUpdateMainBranch = false,
+    noUpdateOriginName = false,
+    orgKey,
     localProjectName,
-    projectPath,
     skipLabels = false,
     skipMilestones = false,
     unpublished = false
   } = req.vars
 
+  const projectPath = req.vars.projectPath
+    || fsPath.join(process.env.HOME, '.liq', 'playground', orgKey, localProjectName)
   const githubOrg = org.getSetting(GITHUB_REPO_KEY)
   const projectName = githubOrg + '/' + localProjectName
 
-  const report = []
-  if (skipLabels !== true) setupGitHubLabels({ noDeleteLabels, noUpdateLabels, projectName, report })
-  if (skipMilestones !== true) await setupGitHubMilestones({ model, projectName, projectPath, report, unpublished })
+  reporter = reporter?.isolate()
+  if (skipLabels !== true) setupGitHubLabels({ noDeleteLabels, noUpdateLabels, projectName, reporter })
+  if (skipMilestones !== true) await setupGitHubMilestones({ model, projectName, projectPath, reporter, unpublished })
+  if (noUpdateOriginName !== true) regularizeRemote({ path: projectPath, reporter })
+  if (noUpdateMainBranch !== true) regulizeMainBranch({ path: projectPath, reporter })
 
-  res.type('text/plain').send(report.join('\n'))
+  res.type('text/plain').send(report.taskReport.join('\n'))
 }
 
 export {
