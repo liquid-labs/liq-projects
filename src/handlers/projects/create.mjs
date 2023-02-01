@@ -66,8 +66,6 @@ const func = ({ app, model, reporter }) => {
     const org = getOrgFromKey({ model, params : req.vars, res })
     if (org === false) return
 
-    const report = []
-
     const {
       description,
       license,
@@ -86,8 +84,14 @@ const func = ({ app, model, reporter }) => {
       return
     }
 
-    if (!checkGitHubSSHAccess({ res })) return // the check will handle user feedback
-    if (!(await checkGitHubAPIAccess({ res }))) return // ditto
+    reporter.reset()
+    reporter = reporter.isolate()
+
+    reporter.push('Checking GitHub SSH access...')
+    checkGitHubSSHAccess({ reporter }) // the check will throw HTTP errors or failure
+    reporter.push('Checking GitHub API access...')
+    await checkGitHubAPIAccess({ reporter }) // ditto
+
     // else we are good to proceed
     const cleanupFuncs = []
     const cleanup = async({ msg, res, status }) => {
@@ -106,7 +110,7 @@ const func = ({ app, model, reporter }) => {
           else successes.push(desc)
         }
         catch (e) {
-          console.log(e)
+          reporter.error(e)
           failures.push(desc)
         }
       }
@@ -126,7 +130,7 @@ const func = ({ app, model, reporter }) => {
 
     try {
       // set up the staging directory
-      reporter.log(`Creating staging directory '${newProjectName}'.`)
+      reporter.push(`Creating staging directory '${newProjectName}'.`)
       
       await fs.mkdir(stagingDir, { recursive : true })
 
@@ -138,7 +142,7 @@ const func = ({ app, model, reporter }) => {
         'remove staging dir'
       ])
 
-      reporter.log(`Initializing staging directory '${newProjectName}'.`)
+      reporter.push(`Initializing staging directory '${newProjectName}'.`)
       const initResult = shell.exec(`cd "${stagingDir}" && git init --quiet . && npm init -y > /dev/null`)
       if (initResult.code !== 0) {
         await cleanup({
@@ -149,7 +153,7 @@ const func = ({ app, model, reporter }) => {
         return
       }
 
-      reporter.log(`Updating '${newProjectName}' package.json...`)
+      reporter.push(`Updating '${newProjectName}' package.json...`)
       const packagePath = stagingDir + '/package.json'
       const packageJSON = readFJSON(packagePath)
 
@@ -172,7 +176,7 @@ const func = ({ app, model, reporter }) => {
 
       writeFJSON({ data : packageJSON, file : packagePath, noMeta : true })
 
-      reporter.log(`Committing initial package.json to '${newProjectName}'...`)
+      reporter.push(`Committing initial package.json to '${newProjectName}'...`)
       const initCommitResult = shell.exec(`cd "${stagingDir}" && git add package.json && git commit -m "package initialization"`)
       if (initCommitResult.code !== 0) {
         await cleanup({
@@ -182,9 +186,9 @@ const func = ({ app, model, reporter }) => {
         })
         return
       }
-      report.push(`Initialized local repository for project '${qualifiedName}'.`)
+      reporter.push(`Initialized local repository for project '${qualifiedName}'.`)
 
-      reporter.log(`Creating github repository for '${newProjectName}'...`)
+      reporter.push(`Creating github repository for '${newProjectName}'...`)
       const creationOpts = '--remote-name origin'
       + ` -d "${description}"`
       + (publicRepo === true ? '' : ' --private')
@@ -197,7 +201,7 @@ const func = ({ app, model, reporter }) => {
         })
         return
       }
-      report.push(`Created GitHub repo '${qualifiedName}'.`)
+      reporter.push(`Created GitHub repo '${qualifiedName}'.`)
 
       cleanupFuncs.push([
         async() => {
@@ -207,12 +211,12 @@ const func = ({ app, model, reporter }) => {
         'delete GitHub repo'
       ])
 
-      reporter.log(`Pushing '${newProjectName}' local updates to GitHub...`)
+      reporter.push(`Pushing '${newProjectName}' local updates to GitHub...`)
       let retry = 3 // will try a total of four times
       const pushCmd = `cd "${stagingDir}" && git push --all origin`
       let pushResult = shell.exec(pushCmd)
       while (pushResult.code !== 0 && retry > 0) {
-        reporter.log('Pausing for GitHub to catch up...')
+        reporter.push('Pausing for GitHub to catch up...')
         await new Promise(resolve => setTimeout(resolve, 2500))
         pushResult = shell.exec(pushCmd)
         retry -= 1
@@ -224,17 +228,17 @@ const func = ({ app, model, reporter }) => {
 
       if (publicRepo === true && noFork === false) {
         const forkResult = shell.exec('hub fork --remote-name workspace')
-        if (forkResult.code === 0) report.push(`Created personal workspace fork for '${qualifiedName}'.`)
-        else report.push('Failed to create personal workspace fork.')
+        if (forkResult.code === 0) reporter.push(`Created personal workspace fork for '${qualifiedName}'.`)
+        else reporter.push('Failed to create personal workspace fork.')
       }
 
-      if (skipLabels !== true) setupGitHubLabels({ projectName : qualifiedName, report })
+      if (skipLabels !== true) setupGitHubLabels({ projectName : qualifiedName, reporter })
       if (skipMilestones !== true) {
         await setupGitHubMilestones({
           model,
           projectName : qualifiedName,
           projectPath : stagingDir,
-          report,
+          reporter,
           unpublished : true
         })
       }
@@ -245,7 +249,7 @@ const func = ({ app, model, reporter }) => {
 
     await fs.rename(stagingDir, app.liqPlayground() + '/' + qualifiedName)
 
-    res.send(report.join('\n')).end()
+    res.send(reporter.taskReport.join('\n')).end()
   } // actual, closure bound handler func return
 }
 

@@ -30,21 +30,21 @@ const func = ({ app, model, reporter }) => async (req, res) => {
   let projectPath = req.vars.projectPath
 
   const pkgData = await getPackageData({ orgKey, localProjectName, projectPath })
-  if (pkgData === false) return
-  let { githubOrg, githubProjectName } = pkgData
+  
+  let { githubOrg, projectFQN } = pkgData
   projectPath = pkgData.projectPath
 
-  const result = shell.exec(`hub api --method DELETE -H "Accept: application/vnd.github+json" /repos/${githubProjectName}`)
-  if (result.code !== 0) throw createError.BadRequest(`There was a problem removing '${githubProjectName}' from github: ${result.stderr}`)
+  const result = shell.exec(`hub api --method DELETE -H "Accept: application/vnd.github+json" /repos/${projectFQN}`)
+  if (result.code !== 0) throw createError.BadRequest(`There was a problem removing '${projectFQN}' from github: ${result.stderr}`)
 
   try {
     await fs.rm(projectPath, { recursive: true })
   }
   catch (e) {
-    throw createError.InternalServerError(`Project '${githubProjectName}' was removed from GitHub, but there was an error removing the local project at '${projectPath}'. Check and address manually.`, { cause: e })
+    throw createError.InternalServerError(`Project '${projectFQN}' was removed from GitHub, but there was an error removing the local project at '${projectPath}'. Check and address manually.`, { cause: e })
   }
 
-  res.type('text/terminal').send(`Removed '${githubProjectName}' from GitHub and deleted project at '${projectPath}'.`)
+  res.type('text/terminal').send(`Removed '${projectFQN}' from GitHub and deleted project at '${projectPath}'.`)
 }
 
 export {
