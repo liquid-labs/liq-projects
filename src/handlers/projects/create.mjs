@@ -213,7 +213,7 @@ const func = ({ app, model, reporter }) => {
 
       reporter.push(`Pushing '${newProjectName}' local updates to GitHub...`)
       let retry = 5 // will try a total of four times
-      const pushCmd = `cd "${stagingDir}" && git push --all origin`
+      const pushCmd = `cd "${stagingDir}" && git push --set-upstream origin main`
       let pushResult = shell.exec(pushCmd)
       while (pushResult.code !== 0 && retry > 0) {
         reporter.push(`Pausing for GitHub to catch up (${retryCount}/5)...`)
