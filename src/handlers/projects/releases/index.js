@@ -1,5 +1,5 @@
 import * as prepareAndPublishHandler from './prepare-and-publish'
 
-const handlers = [ prepareAndPublishHandler ]
+const handlers = [prepareAndPublishHandler]
 
-export handlers
+export { handlers }

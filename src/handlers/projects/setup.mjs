@@ -1,13 +1,13 @@
 import * as fsPath from 'node:path'
 
 import { getOrgFromKey } from '@liquid-labs/liq-handlers-lib'
-import { 
-  checkGitHubAPIAccess, 
+import {
+  checkGitHubAPIAccess,
   checkGitHubSSHAccess,
   regularizeMainBranch,
   regularizeRemote,
-  setupGitHubLabels, 
-  setupGitHubMilestones 
+  setupGitHubLabels,
+  setupGitHubMilestones
 } from '@liquid-labs/github-toolkit'
 
 import { commonProjectPathParameters } from './_lib/common-project-path-parameters'

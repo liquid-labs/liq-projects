@@ -4,11 +4,11 @@ import shell from 'shelljs'
 
 import { readFJSON, writeFJSON } from '@liquid-labs/federated-json'
 import { getOrgFromKey } from '@liquid-labs/liq-handlers-lib'
-import { 
-  checkGitHubAPIAccess, 
-  checkGitHubSSHAccess, 
-  setupGitHubLabels, 
-  setupGitHubMilestones 
+import {
+  checkGitHubAPIAccess,
+  checkGitHubSSHAccess,
+  setupGitHubLabels,
+  setupGitHubMilestones
 } from '@liquid-labs/github-toolkit'
 
 import { commonProjectSetupParameters } from './_lib/common-project-setup-parameters'
@@ -131,10 +131,10 @@ const func = ({ app, model, reporter }) => {
     try {
       // set up the staging directory
       reporter.push(`Creating staging directory '${newProjectName}': <code>${stagingDir}<rst>.`)
-      
+
       await fs.mkdir(stagingDir, { recursive : true })
 
-      cleanupFuncs['stagingDir'] = [
+      cleanupFuncs.stagingDir = [
         async() => {
           await fs.rm(stagingDir, { recursive : true })
           return true
@@ -203,7 +203,7 @@ const func = ({ app, model, reporter }) => {
       }
       reporter.push(`Created GitHub repo '${qualifiedName}'.`)
 
-      cleanupFuncs['githubRepo'] = [
+      cleanupFuncs.githubRepo = [
         async() => {
           const delResult = shell.exec(`hub delete -y ${qualifiedName}`)
           return delResult.code === 0
@@ -216,7 +216,7 @@ const func = ({ app, model, reporter }) => {
       const pushCmd = `cd "${stagingDir}" && git push --set-upstream origin main`
       let pushResult = shell.exec(pushCmd)
       while (pushResult.code !== 0 && retry > 0) {
-        reporter.push(`Pausing for GitHub to catch up (${retryCount}/5)...`)
+        reporter.push(`Pausing for GitHub to catch up (${retry})...`)
         await new Promise(resolve => setTimeout(resolve, 2500))
         pushResult = shell.exec(pushCmd)
         retry -= 1
@@ -236,7 +236,7 @@ const func = ({ app, model, reporter }) => {
       if (skipMilestones !== true) {
         await setupGitHubMilestones({
           model,
-          projectFQN : qualifiedName,
+          projectFQN  : qualifiedName,
           projectPath : stagingDir,
           reporter,
           unpublished : true
