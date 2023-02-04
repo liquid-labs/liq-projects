@@ -7,8 +7,8 @@ import { verifyReadyForRelease } from './_lib/verify-ready-for-release'
 
 const method = 'post'
 const paths = [
-  ['projects', ':orgKey', ':localProjectName', 'releases', 'prepare'],
-  ['orgs', ':orgKey', 'projects', ':newProjectName', 'releases', 'prepare']
+  ['projects', ':orgKey', ':localProjectName', 'releases', 'prepare-and-publish'],
+  ['orgs', ':orgKey', 'projects', ':newProjectName', 'releases', 'prepare-and-publish']
 ]
 const parameters = [
   {
@@ -26,12 +26,14 @@ const parameters = [
     isBoolean: true,
     description: 'If true, prepares but does not publish the package.'
   },
-    {
+  {
     name: 'otp',
     description: 'One time password to be used when publishing the project.'
   },
   ...commonProjectPathParameters
 ]
+parameters.sort((a,b) => a.name.localeCompare(b.name))
+Object.freeze(parameters)
 
 const func = ({ app, model, reporter }) =>  async(req, res) => {
   const { increment, orgKey, localProjectName, noBrowser, noPublish, otp } = req.vars
@@ -90,7 +92,9 @@ const func = ({ app, model, reporter }) =>  async(req, res) => {
   */
 
   if (noPublish === false) {
-    const publishResult = shell.exec(`cd '${projectPath}' && npm publish . --otp=${otp}`)
+    const publishResult = shell.exec(`cd '${projectPath}' && npm publish .${otp === undefined ? '' : `--otp=${otp}`}`)
+    if (publishResult.code !== 0)
+      throw createError(`Project '${projectFQN}' preparation succeeded, but was unable to publish to npm; address manually: ${publishResult.stderr}`)
   }
 }
 
