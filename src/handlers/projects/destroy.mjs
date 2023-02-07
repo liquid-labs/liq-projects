@@ -67,6 +67,8 @@ const func = ({ app, model, reporter }) => async(req, res) => {
     throw createError.InternalServerError(`Project '${projectFQN}' was removed from GitHub, but there was an error removing the local project at '${projectPath}'. Check and address manually.`, { cause : e })
   }
 
+  model.refreshModel()
+
   let msg = `Removed '${projectFQN}' from GitHub and deleted project at '${projectPath}'.`
   if (noCopy !== true) msg += `Project has been temporarily saved at ${tmpDir}.`
   res.type('text/terminal')

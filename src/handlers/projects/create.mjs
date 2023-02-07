@@ -250,6 +250,8 @@ const func = ({ app, model, reporter }) => {
 
     await fs.rename(stagingDir, app.liqPlayground() + '/' + qualifiedName)
 
+    model.refreshModel()
+
     res.send(reporter.taskReport.join('\n')).end()
   } // actual, closure bound handler func return
 }

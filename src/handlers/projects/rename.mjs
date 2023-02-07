@@ -132,6 +132,8 @@ const func = ({ app, model, reporter }) => async(req, res, next) => {
   reporter.push(`Updating <code>${pkgPath}<rst> with new project name '${newFQN}`)
   await fs.writeFile(pkgPath, JSON.stringify(packageSpec, null, '  '))
 
+  model.refreshModel()
+
   res.type('text/terminal').send(reporter.taskReport.join('\n'))
 }
 
