@@ -1,3 +1,5 @@
+/.test-marker
+/.lint-marker
 /node_modules
 /yalc.lock
 /.yalc

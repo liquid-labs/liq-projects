@@ -1,24 +1,40 @@
 import createError from 'http-errors'
 import shell from 'shelljs'
 
-import { determineCurrentBranch } from '@liquid-labs/github-toolkit'
+const tryExec = (cmd, { msg = '', httpStatus = 500 } = {}) => {
+  const result = shell.exec(cmd)
+  if (result.code !== 0) {
+    if (msg.length > 0) msg += ' '
+    throw createError(httpStatus, msg + `Failed to execute '${cmd}'; stderr: ${result.stderr}`)
+  }
 
-const verifyReadyForRelease = ({ mainBranch, originRemote, packageSpec, projectPath, releaseBranch, reporter }) => {
-  const currentBranch = determineCurrentBranch({ projectPath, reporter })
+  return result
+}
 
+const verifyReadyForRelease = ({
+  currentBranch,
+  mainBranch,
+  originRemote,
+  packageSpec,
+  projectPath,
+  releaseBranch,
+  reporter
+}) => {
   reporter?.push('Checking current branch valid...')
+  console.log('currentBranch:', currentBranch) // DEBUG
+  console.log('releaseBranch:', releaseBranch) // DEBUG
   if (currentBranch === releaseBranch) reporter.push(`  already on release branch ${releaseBranch}.`)
   else if (currentBranch !== mainBranch) { throw createError.BadRequest(`Release branch can only be cut from main branch '${mainBranch}'; current branch: '${currentBranch}'.`) }
 
   // Update main branch so we can check we're in sync
   reporter?.push(`Checking ${originRemote} HEAD is up-to-date...`)
-  const updateResult = shell.exec(`cd ${projectPath} && git fetch -q ${originRemote} ${mainBranch}`)
-  if (updateResult !== 0) { throw createError.InternalServerError(`Could not update ${originRemote}/${mainBranch}: ${updateResult.stderr}`) }
+  tryExec(`cd '${projectPath}' && git fetch -q ${originRemote} ${mainBranch}`,
+    { msg : `Could not update ${originRemote}/${mainBranch}.` })
 
-  const originHead = shell.exec(`git rev-parse ${originRemote}/${mainBranch}`)
-  if (originHead !== 0) { throw createError.InternalServerError(`Could not determnie version for ${originRemote}/${mainBranch}: ${originHead.stderr}`) }
-  const localHead = shell.exec(`git rev-parse ${mainBranch}`)
-  if (localHead !== 0) { throw createError.InternalServerError(`Could not determnie version for ${mainBranch}: ${localHead.stderr}`) }
+  const originHead = tryExec(`cd '${projectPath}' && git rev-parse ${originRemote}/${mainBranch}`,
+    { msg : `Could not determnie version for ${originRemote}/${mainBranch}.` })
+  const localHead = tryExec(`cd '${projectPath}' && git rev-parse ${mainBranch}`,
+    { msg : `Could not determnie version for ${mainBranch}.` })
 
   if (originHead.stdout !== localHead.stdout) { throw createError.BadRequest(`Local and ${originRemote} '${mainBranch} are not in sync. Try:\n\ngit fetch ${originRemote} ${mainBranch} \\\n  && git merge ${originRemote}/${mainBranch}\\\n  && git push ${originRemote} ${mainBranch}`) }
 
@@ -29,12 +45,9 @@ const verifyReadyForRelease = ({ mainBranch, originRemote, packageSpec, projectP
 
   reporter?.push("Checking for and running 'qa' script...")
   if ('qa' in packageSpec.scripts) {
-    const qaResult = shell.exec(`cd ${projectPath} && npm run qa`)
-    if (qaResult.code !== 0) throw createError.BadRequest('Project must pass QA prior to release.')
+    tryExec(`cd '${projectPath}' && npm run qa`, { httpStatus : 400, msg : 'Project must pass QA prior to release.' })
   }
   else throw createError.BadRequest("You must define a 'qa' script to be run prior to release.")
-
-  return currentBranch
 }
 
 export { verifyReadyForRelease }

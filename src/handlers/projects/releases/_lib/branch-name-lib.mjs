@@ -9,7 +9,7 @@ const branchBaseName = () => {
   const userId = shell.exec('git config user.email')
   if (userId.code !== 0) throw createError.InternalServerError('Failed to identify git user for branch name.')
 
-  return dateBit + '-' + userId
+  return dateBit + '-' + userId.stdout.trim()
 }
 
 const releaseBranchName = ({ releaseVersion }) => 'release-' + releaseVersion + '-' + branchBaseName()

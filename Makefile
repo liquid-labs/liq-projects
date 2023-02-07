@@ -1,5 +1,5 @@
 .DELETE_ON_ERROR:
-.PHONY: all build test lint lint-fix
+.PHONY: all build lint lint-fix qa test
 
 default: build
 
@@ -33,8 +33,11 @@ $(LIQ_PROJECTS_TEST_BUILT_DATA): test-staging/%: $(LIQ_PROJECTS_SRC)/%
 $(LIQ_PROJECTS_TEST_BUILT_FILES) &: $(LIQ_PROJECTS_ALL_FILES)
 	JS_SRC=$(LIQ_PROJECTS_SRC) $(CATALYST_SCRIPTS) pretest
 
-test: $(LIQ_PROJECTS_TEST_BUILT_FILES) $(LIQ_PROJECTS_TEST_BUILT_DATA)
+.test-marker: $(LIQ_PROJECTS_TEST_BUILT_FILES) $(LIQ_PROJECTS_TEST_BUILT_DATA)
 	JS_SRC=test-staging $(CATALYST_SCRIPTS) test
+	touch $@
+
+test: .test-marker
 
 # lint rules
 lint:
@@ -42,3 +45,5 @@ lint:
 
 lint-fix:
 	JS_LINT_TARGET=$(LIQ_PROJECTS_SRC) $(CATALYST_SCRIPTS) lint-fix
+
+qa: test lint

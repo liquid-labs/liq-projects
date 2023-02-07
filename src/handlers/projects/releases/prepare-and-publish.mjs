@@ -1,7 +1,8 @@
 import createError from 'http-errors'
 import shell from 'shelljs'
 
-import { determineOriginAndMain } from '@liquid-labs/github-toolkit'
+import { determineCurrentBranch, determineOriginAndMain } from '@liquid-labs/github-toolkit'
+import { httpSmartResponse } from '@liquid-labs/http-smart-response'
 import { nextVersion } from '@liquid-labs/versioning'
 
 import { commonProjectPathParameters } from '../_lib/common-project-path-parameters'
@@ -12,7 +13,7 @@ import { verifyReadyForRelease } from './_lib/verify-ready-for-release'
 const method = 'post'
 const paths = [
   ['projects', ':orgKey', ':localProjectName', 'releases', 'prepare-and-publish'],
-  ['orgs', ':orgKey', 'projects', ':newProjectName', 'releases', 'prepare-and-publish']
+  ['orgs', ':orgKey', 'projects', ':localProjectName', 'releases', 'prepare-and-publish']
 ]
 const parameters = [
   {
@@ -40,20 +41,30 @@ parameters.sort((a, b) => a.name.localeCompare(b.name))
 Object.freeze(parameters)
 
 const func = ({ app, model, reporter }) => async(req, res) => {
-  const { increment, orgKey, localProjectName, /* noBrowser, */ noPublish, otp } = req.vars
+  reporter.reset()
+  reporter = reporter.isolate()
+
+  const { increment, orgKey, localProjectName, /* noBrowser, */ noPublish = false, otp } = req.vars
 
   const pkgData = await getPackageData({ orgKey, localProjectName, projectPath : req.vars.projectPath })
 
   const { packageSpec, projectFQN, projectPath } = pkgData
   const [originRemote, mainBranch] = determineOriginAndMain(({ projectPath, reporter }))
 
+  const currentBranch = determineCurrentBranch({ projectPath, reporter })
+
   const currVer = packageSpec.version
-  const nextVer = nextVersion({ currVer, increment })
+  let nextVer
+  if (currentBranch.startsWith('release-')) { // it looks like we're already on the release branch
+    nextVer = currentBranch.replace(/^release-([0-9.]+(?:-(?:alpha|beta|rc)\.\d+)?)-.+$/, '$1')
+  }
+  else {
+    nextVer = nextVersion({ currVer, increment })
+  }
 
   const releaseBranch = releaseBranchName({ releaseVersion : nextVer })
 
-  const currentBranch =
-    verifyReadyForRelease({ mainBranch, originRemote, packageSpec, projectPath, releaseBranch, reporter })
+  verifyReadyForRelease({ currentBranch, mainBranch, originRemote, packageSpec, projectPath, releaseBranch, reporter })
 
   if (currentBranch === mainBranch) {
     const checkoutResult = shell.exec(`cd '${projectPath}' && git checkout --quiet -b '${releaseBranch}'`)
@@ -66,18 +77,35 @@ const func = ({ app, model, reporter }) => async(req, res) => {
   if (buildResult.code !== 0) throw createError.BadRequest('Could not build project for release.')
 
   // npm version will tag and commit
-  const versionResult = shell.exec(`cd '${projectPath}' && npm version ${nextVer}`)
-  if (versionResult.code !== 0) { throw createError.InternalServerError(`'npm version ${nextVer}' failed; address or update manually.`) }
-  const pushTagsResult = shell.exec(`cd '${projectPath}' && git push --tags`)
-  if (pushTagsResult.code !== 0) { throw createError.InternalServerError(`Failed to push version release tag v${nextVer}; address or push manually.`) }
+  if (currVer !== nextVer) {
+    reporter.push('Updating package version...')
+    const versionResult = shell.exec(`cd '${projectPath}' && npm version ${nextVer}`)
+    if (versionResult.code !== 0) { throw createError.InternalServerError(`'npm version ${nextVer}' failed; address or update manually; stderr: ${versionResult.stderr}`) }
+  }
+  else reporter.push('Version already updated')
 
-  reporter?.push(`Merging release branch '${releaseBranch}' to '${mainBranch}'...`)
+  const releaseTag = 'v' + nextVer
+  reporter.push(`Pushing release tag '${releaseTag}' to ${originRemote} remote...`) // TODO: doe
+  const pushTagsResult = shell.exec(`cd '${projectPath}' && git push ${originRemote} ${releaseTag}`)
+  if (pushTagsResult.code !== 0) { throw createError.InternalServerError(`Failed to push version release tag ${releaseTag}: ${pushTagsResult.stderr}`) }
+
+  if (noPublish !== true) {
+    reporter.push('Preparing to publish...')
+    const pushCmd = `cd '${projectPath}' && npm publish${otp === undefined ? '' : ` --otp=${otp}`}`
+    const publishResult = shell.exec(pushCmd, { timout : 1500 /* 1.5 sec */ })
+    if (publishResult.code !== 0) { throw createError(`Project '${projectFQN}' preparation succeeded, but was unable to publish to npm; perhaps you need to include the 'otp' option? Stderr: ${publishResult.stderr}`) }
+  }
+
+  reporter.push(`Merging release branch '${releaseBranch}' to '${mainBranch}'...`)
   const mergeResult =
     shell.exec(`cd '${projectPath}' && git checkout '${mainBranch}' && git merge -m 'Merging auto-generated release branch (liq)' --no-ff '${releaseBranch}'`)
   if (mergeResult.code !== 0) throw createError.InternalServerError(`Could not merge release branch '${releaseBranch}' to '${mainBranch}'; address or merge manually.`)
+
+  reporter.push('Deleting now merged release branch...')
   const deleteBranchResult = shell.exec(`cd '${projectPath}' && git branch -d '${releaseBranch}'`)
   if (deleteBranchResult.code !== 0) { throw createError.InternalServerError(`Could not delete release branch '${releaseBranch}'; manually delete.`) }
 
+  reporter.push(`Updating ${originRemote}/${mainBranch}...`)
   const pushResult = shell.exec(`cd '${projectPath}' && git push ${originRemote} ${mainBranch}`)
   if (pushResult.code !== 0) { throw createError.InternalServerError(`Failed to push merged '${mainBranch}' to remote '${originRemote}'; push manually.`) }
 
@@ -90,10 +118,7 @@ const func = ({ app, model, reporter }) => async(req, res) => {
   }
   */
 
-  if (noPublish === false) {
-    const publishResult = shell.exec(`cd '${projectPath}' && npm publish .${otp === undefined ? '' : `--otp=${otp}`}`)
-    if (publishResult.code !== 0) { throw createError(`Project '${projectFQN}' preparation succeeded, but was unable to publish to npm; address manually: ${publishResult.stderr}`) }
-  }
+  httpSmartResponse({ msg : reporter.taskReport.join('\n'), req, res })
 }
 
 export {
