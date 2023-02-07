@@ -40,8 +40,11 @@ $(LIQ_PROJECTS_TEST_BUILT_FILES) &: $(LIQ_PROJECTS_ALL_FILES)
 test: .test-marker
 
 # lint rules
-lint:
+.lint-marker:
 	JS_LINT_TARGET=$(LIQ_PROJECTS_SRC) $(CATALYST_SCRIPTS) lint
+	touch $@
+
+lint: .lint-marker
 
 lint-fix:
 	JS_LINT_TARGET=$(LIQ_PROJECTS_SRC) $(CATALYST_SCRIPTS) lint-fix
