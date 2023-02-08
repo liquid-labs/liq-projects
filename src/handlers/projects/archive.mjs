@@ -4,10 +4,10 @@ import createError from 'http-errors'
 import shell from 'shelljs'
 
 import { checkGitHubAPIAccess } from '@liquid-labs/github-toolkit'
+import { verifyReadyForRelease } from '@liquid-labs/git-toolkit'
 
 import { commonProjectPathParameters } from './_lib/common-project-path-parameters'
 import { getPackageData } from './_lib/get-package-data'
-import { verifyClean } from './_lib/git-status-lib'
 
 const method = 'put'
 const paths = [
