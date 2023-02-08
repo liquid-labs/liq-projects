@@ -7,6 +7,7 @@ import { checkGitHubAPIAccess } from '@liquid-labs/github-toolkit'
 
 import { commonProjectPathParameters } from './_lib/common-project-path-parameters'
 import { getPackageData } from './_lib/get-package-data'
+import { verifyClean } from './_lib/git-status-lib'
 
 const method = 'put'
 const paths = [
@@ -34,6 +35,8 @@ const func = ({ app, model, reporter }) => async(req, res) => {
 
   const { projectFQN } = pkgData
   projectPath = pkgData.projectPath
+
+  verifyClean({ reporter, ...pkgData })
 
   // TODO: move to github-toolkit as 'deleteGitHubProject'
   const result = shell.exec(`hub api --method PATCH -H "Accept: application/vnd.github+json" /repos/${projectFQN} -F archive=true`)

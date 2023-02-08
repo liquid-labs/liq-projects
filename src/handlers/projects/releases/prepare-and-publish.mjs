@@ -8,7 +8,7 @@ import { nextVersion } from '@liquid-labs/versioning'
 import { commonProjectPathParameters } from '../_lib/common-project-path-parameters'
 import { getPackageData } from '../_lib/get-package-data'
 import { releaseBranchName } from './_lib/branch-name-lib'
-import { verifyReadyForRelease } from './_lib/verify-ready-for-release'
+import { verifyReadyForRelease } from '../_lib/git-status-lib'
 
 const method = 'post'
 const paths = [

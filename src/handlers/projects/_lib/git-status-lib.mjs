@@ -11,21 +11,7 @@ const tryExec = (cmd, { msg = '', httpStatus = 500 } = {}) => {
   return result
 }
 
-const verifyReadyForRelease = ({
-  currentBranch,
-  mainBranch,
-  originRemote,
-  packageSpec,
-  projectPath,
-  releaseBranch,
-  reporter
-}) => {
-  reporter?.push('Checking current branch valid...')
-  console.log('currentBranch:', currentBranch) // DEBUG
-  console.log('releaseBranch:', releaseBranch) // DEBUG
-  if (currentBranch === releaseBranch) reporter.push(`  already on release branch ${releaseBranch}.`)
-  else if (currentBranch !== mainBranch) { throw createError.BadRequest(`Release branch can only be cut from main branch '${mainBranch}'; current branch: '${currentBranch}'.`) }
-
+const verifyClean = ({ mainBranch, originRemote, projectPath, reporter }) => {
   // Update main branch so we can check we're in sync
   reporter?.push(`Checking ${originRemote} HEAD is up-to-date...`)
   tryExec(`cd '${projectPath}' && git fetch -q ${originRemote} ${mainBranch}`,
@@ -42,6 +28,22 @@ const verifyReadyForRelease = ({
   const cleanResult = shell.exec(`cd '${projectPath}' && git status --porcelain`)
   if (cleanResult.code !== 0) { throw createError.InternalServerError(`Could not execute 'git status' in dir '${projectPath}'.`) }
   else if (cleanResult.stdout.length > 0) { throw createError.BadRequest(`git repo at '${projectPath}' is not clean.`) }
+}
+
+const verifyReadyForRelease = ({
+  currentBranch,
+  mainBranch,
+  originRemote,
+  packageSpec,
+  projectPath,
+  releaseBranch,
+  reporter
+}) => {
+  reporter?.push('Checking current branch valid...')
+  if (currentBranch === releaseBranch) reporter.push(`  already on release branch ${releaseBranch}.`)
+  else if (currentBranch !== mainBranch) { throw createError.BadRequest(`Release branch can only be cut from main branch '${mainBranch}'; current branch: '${currentBranch}'.`) }
+
+  verifyClean({ mainBranch, originRemote, projectPath, reporter })
 
   reporter?.push("Checking for and running 'qa' script...")
   if ('qa' in packageSpec.scripts) {
@@ -50,4 +52,4 @@ const verifyReadyForRelease = ({
   else throw createError.BadRequest("You must define a 'qa' script to be run prior to release.")
 }
 
-export { verifyReadyForRelease }
+export { verifyClean, verifyReadyForRelease }
