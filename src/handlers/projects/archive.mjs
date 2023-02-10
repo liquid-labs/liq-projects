@@ -4,7 +4,7 @@ import createError from 'http-errors'
 import shell from 'shelljs'
 
 import { checkGitHubAPIAccess } from '@liquid-labs/github-toolkit'
-import { verifyReadyForRelease } from '@liquid-labs/git-toolkit'
+import { verifyClean, verifyMainBranchUpToDate } from '@liquid-labs/git-toolkit'
 
 import { commonProjectPathParameters } from './_lib/common-project-path-parameters'
 import { getPackageData } from './_lib/get-package-data'
@@ -36,6 +36,7 @@ const func = ({ app, model, reporter }) => async(req, res) => {
   const { projectFQN } = pkgData
   projectPath = pkgData.projectPath
 
+  verifyMainBranchUpToDate({ reporter, ...pkgData })
   verifyClean({ reporter, ...pkgData })
 
   // TODO: move to github-toolkit as 'deleteGitHubProject'
