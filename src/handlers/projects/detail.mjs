@@ -1,3 +1,4 @@
+// TODO: we should do more with this; expose liq-specific info. Right now, we're duplicating playground/projects/get-package
 import createError from 'http-errors'
 
 import { httpSmartResponse } from '@liquid-labs/http-smart-response'
