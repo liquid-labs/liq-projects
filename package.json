@@ -34,7 +34,7 @@
     "@liquid-labs/catalyst-scripts": "^1.0.0-alpha.57",
     "@liquid-labs/federated-json": "^1.0.0-alpha.31",
     "@liquid-labs/git-toolkit": "^1.0.0-alpha.2",
-    "@liquid-labs/http-smart-response": "^1.0.0-alpha.2",
+    "@liquid-labs/http-smart-response": "^1.0.0-alpha.3",
     "@liquid-labs/liq-handlers-lib": "^1.0.0-alpha.12",
     "@liquid-labs/versioning": "^1.0.0-alpha.1",
     "highlight.js": "^11.7.0",
