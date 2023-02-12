@@ -75,15 +75,33 @@ const func = ({ app, model, reporter }) => async(req, res) => {
   const buildResult = shell.exec(`cd '${projectPath}' && npm run build`)
   if (buildResult.code !== 0) throw createError.BadRequest('Could not build project for release.')
 
+  const releaseTag = 'v' + nextVer
+
   // npm version will tag and commit
   if (currVer !== nextVer) {
+    let doCommit = false
+    for (const qaFile of [ 'list-lint.txt', 'last-test.txt' ]) {
+      if (fs.existsSync(fsPath.join(projectPath, qaFile))) {
+        reporter.push(`Saving ${qaFile}...`)
+        const addResult = shell.exec(`cd '${projectPath}' && git add --force '${qaFile}'`)
+        if (addResult.code !== 0) 
+          throw createError.InternalServerError(`Error adding QA file '${qaFile}': ${addResult.stderr}`)
+        doCommit = true
+      }
+    }
+    if (doCommit === true) {
+      const commitResult =
+        shell.exec(`cd '${projectPath}' && git commit -m 'Saving QA files for release ${releaseTag}.'`)
+      if (commitResult.code !== 0) 
+        throw createError.InternalServerError(`Error commiting QA files: ${commitResult.stderr}`)
+    }
+
     reporter.push('Updating package version...')
     const versionResult = shell.exec(`cd '${projectPath}' && npm version ${nextVer}`)
     if (versionResult.code !== 0) { throw createError.InternalServerError(`'npm version ${nextVer}' failed; address or update manually; stderr: ${versionResult.stderr}`) }
   }
   else reporter.push('Version already updated')
 
-  const releaseTag = 'v' + nextVer
   reporter.push(`Pushing release tag '${releaseTag}' to ${originRemote} remote...`) // TODO: doe
   const pushTagsResult = shell.exec(`cd '${projectPath}' && git push ${originRemote} ${releaseTag}`)
   if (pushTagsResult.code !== 0) { throw createError.InternalServerError(`Failed to push version release tag ${releaseTag}: ${pushTagsResult.stderr}`) }

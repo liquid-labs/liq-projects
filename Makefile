@@ -1,3 +1,7 @@
+ifneq (grouped-target, $(findstring grouped-target,$(.FEATURES)))
+ERROR:=$(error This version of make does not support required 'grouped-target' (4.3+).)
+endif
+
 .DELETE_ON_ERROR:
 .PHONY: all build lint lint-fix qa test
 
@@ -13,6 +17,8 @@ LIQ_PROJECTS_TEST_BUILT_FILES:=$(patsubst $(LIQ_PROJECTS_SRC)/%, test-staging/%,
 LIQ_PROJECTS_TEST_SRC_DATA:=$(shell find $(LIQ_PROJECTS_SRC) -path "*/test/data/*" -type f)
 LIQ_PROJECTS_TEST_BUILT_DATA:=$(patsubst $(LIQ_PROJECTS_SRC)/%, test-staging/%, $(LIQ_PROJECTS_TEST_SRC_DATA))
 LIQ_PROJECTS:=dist/liq-projects.js
+
+TEST_STAGING:=test-staging
 
 BUILD_TARGETS:=$(LIQ_PROJECTS)
 
@@ -33,18 +39,24 @@ $(LIQ_PROJECTS_TEST_BUILT_DATA): test-staging/%: $(LIQ_PROJECTS_SRC)/%
 $(LIQ_PROJECTS_TEST_BUILT_FILES) &: $(LIQ_PROJECTS_ALL_FILES)
 	JS_SRC=$(LIQ_PROJECTS_SRC) $(CATALYST_SCRIPTS) pretest
 
-.test-marker: $(LIQ_PROJECTS_TEST_BUILT_FILES) $(LIQ_PROJECTS_TEST_BUILT_DATA)
-	JS_SRC=test-staging $(CATALYST_SCRIPTS) test
-	touch $@
+last-test.txt: $(LIQ_PROJECTS_TEST_BUILT_FILES) $(LIQ_PROJECTS_TEST_BUILT_DATA)
+	( \
+		set -e; \
+		set -o pipefail; \
+		JS_SRC=$(TEST_STAGING) $(CATALYST_SCRIPTS) test 2>&1 | tee last-test.txt; \
+	)
 
-test: .test-marker
+test: last-test.txt
 
 # lint rules
-.lint-marker: $(LIQ_PROJECTS_ALL_FILES)
-	JS_LINT_TARGET=$(LIQ_PROJECTS_SRC) $(CATALYST_SCRIPTS) lint
-	touch $@
+last-lint.txt: $(LIQ_PROJECTS_ALL_FILES)
+	( \
+		set -e; \
+		set -o pipefail; \
+		JS_LINT_TARGET=$(LIQ_PROJECTS_SRC) $(CATALYST_SCRIPTS) lint | tee last-lint.txt; \
+	)
 
-lint: .lint-marker
+lint: last-lint.txt
 
 lint-fix:
 	JS_LINT_TARGET=$(LIQ_PROJECTS_SRC) $(CATALYST_SCRIPTS) lint-fix
