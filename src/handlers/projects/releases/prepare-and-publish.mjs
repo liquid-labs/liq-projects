@@ -1,3 +1,6 @@
+import * as fs from 'node:fs'
+import * as fsPath from 'node:path'
+
 import createError from 'http-errors'
 import shell from 'shelljs'
 
@@ -80,20 +83,18 @@ const func = ({ app, model, reporter }) => async(req, res) => {
   // npm version will tag and commit
   if (currVer !== nextVer) {
     let doCommit = false
-    for (const qaFile of [ 'list-lint.txt', 'last-test.txt' ]) {
+    for (const qaFile of ['list-lint.txt', 'last-test.txt']) {
       if (fs.existsSync(fsPath.join(projectPath, qaFile))) {
         reporter.push(`Saving ${qaFile}...`)
         const addResult = shell.exec(`cd '${projectPath}' && git add --force '${qaFile}'`)
-        if (addResult.code !== 0) 
-          throw createError.InternalServerError(`Error adding QA file '${qaFile}': ${addResult.stderr}`)
+        if (addResult.code !== 0) { throw createError.InternalServerError(`Error adding QA file '${qaFile}': ${addResult.stderr}`) }
         doCommit = true
       }
     }
     if (doCommit === true) {
       const commitResult =
         shell.exec(`cd '${projectPath}' && git commit -m 'Saving QA files for release ${releaseTag}.'`)
-      if (commitResult.code !== 0) 
-        throw createError.InternalServerError(`Error commiting QA files: ${commitResult.stderr}`)
+      if (commitResult.code !== 0) { throw createError.InternalServerError(`Error commiting QA files: ${commitResult.stderr}`) }
     }
 
     reporter.push('Updating package version...')

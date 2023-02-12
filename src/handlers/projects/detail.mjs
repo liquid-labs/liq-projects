@@ -18,7 +18,7 @@ const func = ({ app, model, reporter }) => async(req, res) => {
   const projectData = model.playground.projects[projectFQN]
   if (projectData === undefined) throw createError.NotFound(`No such project '${projectFQN}'.`)
 
-  httpSmartResponse({ data: projectData, msg: `Retrieved project '${projectFQN}'.`, req, res })
+  httpSmartResponse({ data : projectData, msg : `Retrieved project '${projectFQN}'.`, req, res })
 }
 
 export {
