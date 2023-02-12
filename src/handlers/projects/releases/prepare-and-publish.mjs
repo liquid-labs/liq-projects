@@ -100,6 +100,12 @@ const func = ({ app, model, reporter }) => async(req, res) => {
     reporter.push('Updating package version...')
     const versionResult = shell.exec(`cd '${projectPath}' && npm version ${nextVer}`)
     if (versionResult.code !== 0) { throw createError.InternalServerError(`'npm version ${nextVer}' failed; address or update manually; stderr: ${versionResult.stderr}`) }
+
+    if (doCommit) {
+      const rmResult = shell.exec(`cd '${projectPath}' && git rm last-*.txt && git commit -m 'removed QA files'`)
+      if (rmResult.code !== 0)
+        throw createError.InternalServerError(`There was an error cleaning up the QA files: ${rmResult.stderr}`)
+    }
   }
   else reporter.push('Version already updated')
 
