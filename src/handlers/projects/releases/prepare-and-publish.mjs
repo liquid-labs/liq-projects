@@ -83,7 +83,7 @@ const func = ({ app, model, reporter }) => async(req, res) => {
   // npm version will tag and commit
   if (currVer !== nextVer) {
     let doCommit = false
-    for (const qaFile of ['list-lint.txt', 'last-test.txt']) {
+    for (const qaFile of ['last-lint.txt', 'last-test.txt']) {
       if (fs.existsSync(fsPath.join(projectPath, qaFile))) {
         reporter.push(`Saving ${qaFile}...`)
         const addResult = shell.exec(`cd '${projectPath}' && git add --force '${qaFile}'`)
@@ -92,6 +92,7 @@ const func = ({ app, model, reporter }) => async(req, res) => {
       }
     }
     if (doCommit === true) {
+      reporter.push('Committing QA files...')
       const commitResult =
         shell.exec(`cd '${projectPath}' && git commit -m 'Saving QA files for release ${releaseTag}.'`)
       if (commitResult.code !== 0) { throw createError.InternalServerError(`Error commiting QA files: ${commitResult.stderr}`) }
