@@ -103,8 +103,7 @@ const func = ({ app, model, reporter }) => async(req, res) => {
 
     if (doCommit) {
       const rmResult = shell.exec(`cd '${projectPath}' && git rm last-*.txt && git commit -m 'removed QA files'`)
-      if (rmResult.code !== 0)
-        throw createError.InternalServerError(`There was an error cleaning up the QA files: ${rmResult.stderr}`)
+      if (rmResult.code !== 0) { throw createError.InternalServerError(`There was an error cleaning up the QA files: ${rmResult.stderr}`) }
     }
   }
   else reporter.push('Version already updated')
