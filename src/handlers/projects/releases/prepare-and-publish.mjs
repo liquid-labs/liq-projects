@@ -4,11 +4,10 @@ import shell from 'shelljs'
 import { determineCurrentBranch, determineOriginAndMain } from '@liquid-labs/github-toolkit'
 import { httpSmartResponse } from '@liquid-labs/http-smart-response'
 import { nextVersion } from '@liquid-labs/versioning'
-import { verifyReadyForRelease } from '@liquid-labs/git-toolkit'
+import { releaseBranchName, verifyReadyForRelease } from '@liquid-labs/git-toolkit'
 
 import { commonProjectPathParameters } from '../_lib/common-project-path-parameters'
 import { getPackageData } from '../_lib/get-package-data'
-import { releaseBranchName } from './_lib/branch-name-lib'
 
 const method = 'post'
 const paths = [
