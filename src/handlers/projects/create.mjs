@@ -56,204 +56,197 @@ const parameters = [
 parameters.sort((a, b) => a.name.localeCompare(b.name))
 Object.freeze(parameters)
 
-const func = ({ app, model, reporter }) => {
-  app.commonPathResolvers.newProjectName = {
-    optionsFetcher : () => [],
-    bitReString    : '[a-zA-Z][a-zA-Z0-9-]*'
+const func = ({ app, model, reporter }) => async(req, res) => {
+  const org = getOrgFromKey({ model, params : req.vars, res })
+  if (org === false) return
+
+  const {
+    description,
+    license,
+    orgKey,
+    newProjectName,
+    noCleanup,
+    noFork = false,
+    public : publicRepo = false,
+    skipLabels,
+    skipMilestones,
+    version = DEFAULT_VERSION
+  } = req.vars
+  const orgGithubName = org.getSetting(GITHUB_REPO_KEY)
+  if (!orgGithubName) {
+    res.status(400).type('text/plain').send(`'${GITHUB_REPO_KEY}' not defined for org '${orgKey}'.`)
+    return
   }
 
-  return async(req, res) => {
-    const org = getOrgFromKey({ model, params : req.vars, res })
-    if (org === false) return
+  reporter.reset()
+  reporter = reporter.isolate()
 
-    const {
-      description,
-      license,
-      orgKey,
-      newProjectName,
-      noCleanup,
-      noFork = false,
-      public : publicRepo = false,
-      skipLabels,
-      skipMilestones,
-      version = DEFAULT_VERSION
-    } = req.vars
-    const orgGithubName = org.getSetting(GITHUB_REPO_KEY)
-    if (!orgGithubName) {
-      res.status(400).type('text/plain').send(`'${GITHUB_REPO_KEY}' not defined for org '${orgKey}'.`)
-      return
+  reporter.push('Checking GitHub SSH access...')
+  checkGitHubSSHAccess({ reporter }) // the check will throw HTTP errors or failure
+  reporter.push('Checking GitHub API access...')
+  await checkGitHubAPIAccess({ reporter }) // ditto
+
+  // else we are good to proceed
+  const cleanupFuncs = {}
+  const cleanup = async({ msg, res, status }) => {
+    if (noCleanup === true) {
+      res.status(status).type('text/plain').send(`Failed to fully create '${newProjectName}'; no cleanup performed: ${msg}`)
+      return true
     }
 
-    reporter.reset()
-    reporter = reporter.isolate()
+    const successes = []
+    const failures = []
+    let success = true
+    for (const [func, desc] of Object.values(cleanupFuncs)) {
+      try {
+        success = await func() && success
+        if (!success) failures.push(desc)
+        else successes.push(desc)
+      }
+      catch (e) {
+        reporter.error(e)
+        failures.push(desc)
+      }
+    }
 
-    reporter.push('Checking GitHub SSH access...')
-    checkGitHubSSHAccess({ reporter }) // the check will throw HTTP errors or failure
-    reporter.push('Checking GitHub API access...')
-    await checkGitHubAPIAccess({ reporter }) // ditto
+    res.status(status).type('text/plain')
+      .send(msg + '\n\n'
+      + 'Cleanup appears to have '
+        + (failures.length === 0
+          ? 'succeeded;\n' + successes.join(' succeeded\n') + ' succeeded'
+          : 'failed;\n' + failures.join(' failed\n') + ' failed'))
 
-    // else we are good to proceed
-    const cleanupFuncs = {}
-    const cleanup = async({ msg, res, status }) => {
-      if (noCleanup === true) {
-        res.status(status).type('text/plain').send(`Failed to fully create '${newProjectName}'; no cleanup performed: ${msg}`)
+    return failures.length === 0
+  }
+
+  const stagingDir = `${app.liqHome()}/tmp/liq-core/project-staging/${newProjectName}`
+  const qualifiedName = orgGithubName + '/' + newProjectName
+
+  try {
+    // set up the staging directory
+    reporter.push(`Creating staging directory '${newProjectName}': <code>${stagingDir}<rst>.`)
+
+    await fs.mkdir(stagingDir, { recursive : true })
+
+    cleanupFuncs.stagingDir = [
+      async() => {
+        await fs.rm(stagingDir, { recursive : true })
         return true
-      }
+      },
+      'remove staging dir'
+    ]
 
-      const successes = []
-      const failures = []
-      let success = true
-      for (const [func, desc] of Object.values(cleanupFuncs)) {
-        try {
-          success = await func() && success
-          if (!success) failures.push(desc)
-          else successes.push(desc)
-        }
-        catch (e) {
-          reporter.error(e)
-          failures.push(desc)
-        }
-      }
-
-      res.status(status).type('text/plain')
-        .send(msg + '\n\n'
-        + 'Cleanup appears to have '
-          + (failures.length === 0
-            ? 'succeeded;\n' + successes.join(' succeeded\n') + ' succeeded'
-            : 'failed;\n' + failures.join(' failed\n') + ' failed'))
-
-      return failures.length === 0
-    }
-
-    const stagingDir = `${app.liqHome()}/tmp/liq-core/project-staging/${newProjectName}`
-    const qualifiedName = orgGithubName + '/' + newProjectName
-
-    try {
-      // set up the staging directory
-      reporter.push(`Creating staging directory '${newProjectName}': <code>${stagingDir}<rst>.`)
-
-      await fs.mkdir(stagingDir, { recursive : true })
-
-      cleanupFuncs.stagingDir = [
-        async() => {
-          await fs.rm(stagingDir, { recursive : true })
-          return true
-        },
-        'remove staging dir'
-      ]
-
-      reporter.push(`Initializing staging directory '${newProjectName}'.`)
-      const initResult = shell.exec(`cd "${stagingDir}" && git init --quiet . && npm init -y > /dev/null`)
-      if (initResult.code !== 0) {
-        await cleanup({
-          msg    : `There was an error initalizing the local project in staging dir '${stagingDir}' (${initResult.code}):\n${initResult.stderr}`,
-          res,
-          status : 500
-        })
-        return
-      }
-
-      reporter.push(`Updating '${newProjectName}' package.json...`)
-      const packagePath = stagingDir + '/package.json'
-      const packageJSON = readFJSON(packagePath)
-
-      const repoFragment = 'github.com/' + qualifiedName
-      const repoURL = `git+ssh://git@${repoFragment}.git`
-      const bugsURL = `https://${repoFragment}/issues`
-      const homepage = `https://${repoFragment}#readme`
-      const pkgLicense = license || org.getSetting('ORG_DEFAULT_LICENSE') || DEFAULT_LICENSE
-
-      packageJSON.name = '@' + qualifiedName
-      packageJSON.main = `dist/${newProjectName}.js`
-      packageJSON.version = version
-      packageJSON.repository = repoURL
-      packageJSON.bugs = { url : bugsURL }
-      packageJSON.homepage = homepage
-      packageJSON.license = pkgLicense
-      if (description) {
-        packageJSON.description = description
-      }
-
-      writeFJSON({ data : packageJSON, file : packagePath, noMeta : true })
-
-      reporter.push(`Committing initial package.json to '${newProjectName}'...`)
-      const initCommitResult = shell.exec(`cd "${stagingDir}" && git add package.json && git commit -m "package initialization"`)
-      if (initCommitResult.code !== 0) {
-        await cleanup({
-          msg    : `Could not make initial project commit for '${qualifiedName}'.`,
-          res,
-          status : 500
-        })
-        return
-      }
-      reporter.push(`Initialized local repository for project '${qualifiedName}'.`)
-
-      reporter.push(`Creating github repository for '${newProjectName}'...`)
-      const creationOpts = '--remote-name origin'
-      + ` -d "${description}"`
-      + (publicRepo === true ? '' : ' --private')
-      const hubCreateResult = shell.exec(`cd "${stagingDir}" && hub create ${creationOpts} ${qualifiedName}`)
-      if (hubCreateResult.code !== 0) {
-        await cleanup({
-          msg    : `There was an error initalizing the github repo '${qualifiedName}' (${hubCreateResult.code}):\n${hubCreateResult.stderr}`,
-          res,
-          status : 500
-        })
-        return
-      }
-      reporter.push(`Created GitHub repo '${qualifiedName}'.`)
-
-      cleanupFuncs.githubRepo = [
-        async() => {
-          const delResult = shell.exec(`hub delete -y ${qualifiedName}`)
-          return delResult.code === 0
-        },
-        'delete GitHub repo'
-      ]
-
-      reporter.push(`Pushing '${newProjectName}' local updates to GitHub...`)
-      let retry = 5 // will try a total of four times
-      const pushCmd = `cd "${stagingDir}" && git push --set-upstream origin main`
-      let pushResult = shell.exec(pushCmd)
-      while (pushResult.code !== 0 && retry > 0) {
-        reporter.push(`Pausing for GitHub to catch up (${retry})...`)
-        await new Promise(resolve => setTimeout(resolve, 2500))
-        pushResult = shell.exec(pushCmd)
-        retry -= 1
-      }
-      if (pushResult.code !== 0) {
-        await cleanup({ msg : 'Could not push local staging dir changes to GitHub.', res, status : 500 })
-        return
-      }
-
-      if (publicRepo === true && noFork === false) {
-        const forkResult = shell.exec('hub fork --remote-name workspace')
-        if (forkResult.code === 0) reporter.push(`Created personal workspace fork for '${qualifiedName}'.`)
-        else reporter.push('Failed to create personal workspace fork.')
-      }
-
-      if (skipLabels !== true) await setupGitHubLabels({ projectFQN : qualifiedName, reporter })
-      if (skipMilestones !== true) {
-        await setupGitHubMilestones({
-          model,
-          projectFQN  : qualifiedName,
-          projectPath : stagingDir,
-          reporter,
-          unpublished : true
-        })
-      }
-    }
-    catch (e) {
-      await cleanup({ msg : `There was an error creating project '${qualifiedName}'; ${e.message}`, res, status : 500 })
+    reporter.push(`Initializing staging directory '${newProjectName}'.`)
+    const initResult = shell.exec(`cd "${stagingDir}" && git init --quiet . && npm init -y > /dev/null`)
+    if (initResult.code !== 0) {
+      await cleanup({
+        msg    : `There was an error initalizing the local project in staging dir '${stagingDir}' (${initResult.code}):\n${initResult.stderr}`,
+        res,
+        status : 500
+      })
       return
     }
 
-    await fs.rename(stagingDir, app.liqPlayground() + '/' + qualifiedName)
+    reporter.push(`Updating '${newProjectName}' package.json...`)
+    const packagePath = stagingDir + '/package.json'
+    const packageJSON = readFJSON(packagePath)
 
-    model.refreshModel()
+    const repoFragment = 'github.com/' + qualifiedName
+    const repoURL = `git+ssh://git@${repoFragment}.git`
+    const bugsURL = `https://${repoFragment}/issues`
+    const homepage = `https://${repoFragment}#readme`
+    const pkgLicense = license || org.getSetting('ORG_DEFAULT_LICENSE') || DEFAULT_LICENSE
 
-    res.send(reporter.taskReport.join('\n')).end()
-  } // actual, closure bound handler func return
+    packageJSON.name = '@' + qualifiedName
+    packageJSON.main = `dist/${newProjectName}.js`
+    packageJSON.version = version
+    packageJSON.repository = repoURL
+    packageJSON.bugs = { url : bugsURL }
+    packageJSON.homepage = homepage
+    packageJSON.license = pkgLicense
+    if (description) {
+      packageJSON.description = description
+    }
+
+    writeFJSON({ data : packageJSON, file : packagePath, noMeta : true })
+
+    reporter.push(`Committing initial package.json to '${newProjectName}'...`)
+    const initCommitResult = shell.exec(`cd "${stagingDir}" && git add package.json && git commit -m "package initialization"`)
+    if (initCommitResult.code !== 0) {
+      await cleanup({
+        msg    : `Could not make initial project commit for '${qualifiedName}'.`,
+        res,
+        status : 500
+      })
+      return
+    }
+    reporter.push(`Initialized local repository for project '${qualifiedName}'.`)
+
+    reporter.push(`Creating github repository for '${newProjectName}'...`)
+    const creationOpts = '--remote-name origin'
+    + ` -d "${description}"`
+    + (publicRepo === true ? '' : ' --private')
+    const hubCreateResult = shell.exec(`cd "${stagingDir}" && hub create ${creationOpts} ${qualifiedName}`)
+    if (hubCreateResult.code !== 0) {
+      await cleanup({
+        msg    : `There was an error initalizing the github repo '${qualifiedName}' (${hubCreateResult.code}):\n${hubCreateResult.stderr}`,
+        res,
+        status : 500
+      })
+      return
+    }
+    reporter.push(`Created GitHub repo '${qualifiedName}'.`)
+
+    cleanupFuncs.githubRepo = [
+      async() => {
+        const delResult = shell.exec(`hub delete -y ${qualifiedName}`)
+        return delResult.code === 0
+      },
+      'delete GitHub repo'
+    ]
+
+    reporter.push(`Pushing '${newProjectName}' local updates to GitHub...`)
+    let retry = 5 // will try a total of four times
+    const pushCmd = `cd "${stagingDir}" && git push --set-upstream origin main`
+    let pushResult = shell.exec(pushCmd)
+    while (pushResult.code !== 0 && retry > 0) {
+      reporter.push(`Pausing for GitHub to catch up (${retry})...`)
+      await new Promise(resolve => setTimeout(resolve, 2500))
+      pushResult = shell.exec(pushCmd)
+      retry -= 1
+    }
+    if (pushResult.code !== 0) {
+      await cleanup({ msg : 'Could not push local staging dir changes to GitHub.', res, status : 500 })
+      return
+    }
+
+    if (publicRepo === true && noFork === false) {
+      const forkResult = shell.exec('hub fork --remote-name workspace')
+      if (forkResult.code === 0) reporter.push(`Created personal workspace fork for '${qualifiedName}'.`)
+      else reporter.push('Failed to create personal workspace fork.')
+    }
+
+    if (skipLabels !== true) await setupGitHubLabels({ projectFQN : qualifiedName, reporter })
+    if (skipMilestones !== true) {
+      await setupGitHubMilestones({
+        model,
+        projectFQN  : qualifiedName,
+        projectPath : stagingDir,
+        reporter,
+        unpublished : true
+      })
+    }
+  }
+  catch (e) {
+    await cleanup({ msg : `There was an error creating project '${qualifiedName}'; ${e.message}`, res, status : 500 })
+    return
+  }
+
+  await fs.rename(stagingDir, app.liqPlayground() + '/' + qualifiedName)
+
+  model.refreshModel()
+
+  res.send(reporter.taskReport.join('\n')).end()
 }
 
 export {
