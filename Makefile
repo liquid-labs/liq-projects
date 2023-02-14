@@ -40,21 +40,15 @@ $(LIQ_PROJECTS_TEST_BUILT_FILES) &: $(LIQ_PROJECTS_ALL_FILES)
 	JS_SRC=$(LIQ_PROJECTS_SRC) $(CATALYST_SCRIPTS) pretest
 
 last-test.txt: $(LIQ_PROJECTS_TEST_BUILT_FILES) $(LIQ_PROJECTS_TEST_BUILT_DATA)
-	( \
-		set -e; \
-		set -o pipefail; \
-		JS_SRC=$(TEST_STAGING) $(CATALYST_SCRIPTS) test 2>&1 | tee last-test.txt; \
-	)
+	( set -e; set -o pipefail; \
+		JS_SRC=$(TEST_STAGING) $(CATALYST_SCRIPTS) test 2>&1 | tee last-test.txt; )
 
 test: last-test.txt
 
 # lint rules
 last-lint.txt: $(LIQ_PROJECTS_ALL_FILES)
-	( \
-		set -e; \
-		set -o pipefail; \
-		JS_LINT_TARGET=$(LIQ_PROJECTS_SRC) $(CATALYST_SCRIPTS) lint | tee last-lint.txt; \
-	)
+	( set -e; set -o pipefail; \
+		JS_LINT_TARGET=$(LIQ_PROJECTS_SRC) $(CATALYST_SCRIPTS) lint | tee last-lint.txt; )
 
 lint: last-lint.txt
 
