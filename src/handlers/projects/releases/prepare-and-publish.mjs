@@ -1,13 +1,10 @@
-import * as fs from 'node:fs'
-import * as fsPath from 'node:path'
-
 import createError from 'http-errors'
 import shell from 'shelljs'
 
 import { determineCurrentBranch, determineOriginAndMain } from '@liquid-labs/github-toolkit'
-import { releaseBranchName, verifyReadyForRelease } from '@liquid-labs/git-toolkit'
+import { releaseBranchName, verifyClean, verifyMainBranchUpToDate } from '@liquid-labs/git-toolkit'
 import { httpSmartResponse } from '@liquid-labs/http-smart-response'
-import { runQA } from '@liquid-labs/liq-qa-lib'
+import { cleanupQAFiles, runQA, saveQAFiles } from '@liquid-labs/liq-qa-lib'
 import { nextVersion } from '@liquid-labs/versioning'
 
 import { commonProjectPathParameters } from '../_lib/common-project-path-parameters'
@@ -91,10 +88,10 @@ const func = ({ app, model, reporter }) => async(req, res) => {
 
   // npm version will tag and commit
   if (currVer !== nextVer) {
-    const doCommit = saveQAFiles({ 
-      commitMsg: `Saving QA files for release ${releaseTag}.`, 
-      projectPath, 
-      reporter 
+    const doCommit = saveQAFiles({
+      commitMsg : `Saving QA files for release ${releaseTag}.`,
+      projectPath,
+      reporter
     }).length > 0
 
     reporter.push('Updating package version...')
@@ -148,7 +145,7 @@ const func = ({ app, model, reporter }) => async(req, res) => {
  * the main branch is up to date with the origin remote and vice-a-versa, and there is a package 'qa' script that
  * passes.
  */
-verifyReadyForRelease = ({
+const verifyReadyForRelease = ({
   currentBranch,
   mainBranch,
   originRemote,
@@ -157,18 +154,18 @@ verifyReadyForRelease = ({
   releaseBranch,
   reporter
 }) => {
-    // verify we are on a valid branch
+  // verify we are on a valid branch
   reporter?.push('Checking current branch valid...')
   if (currentBranch === releaseBranch) reporter.push(`  already on release branch ${releaseBranch}.`)
   else if (currentBranch !== mainBranch) { throw createError.BadRequest(`Release branch can only be cut from main branch '${mainBranch}'; current branch: '${currentBranch}'.`) }
-  
+
   verifyClean({ projectPath, reporter })
   verifyMainBranchUpToDate({ projectPath, reporter })
-  runQA({ 
-    msgFail: 'Project must pass QA prior to release.', 
-    msgNoScript: "You must define a 'qa' script to be run prior to release.", 
-    packageSpec, 
-    projectPath 
+  runQA({
+    msgFail     : 'Project must pass QA prior to release.',
+    msgNoScript : "You must define a 'qa' script to be run prior to release.",
+    packageSpec,
+    projectPath
   })
 }
 
