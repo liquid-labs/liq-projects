@@ -131,7 +131,7 @@ const func = ({ app, model, reporter }) => async(req, res) => {
   /* TODO: open browser to
   if (noBrowser === false) {
     const releaseAnchor = `release-v${nextVer}`
-    const browseResult = shell.exec(`hub browse '${projectFQN}' 'blob/master/CHANGELOG.md#${releaseAnchor}'`)
+    const browseResult = shell.exec(`hub browse '${projectFQN}' 'blob/${main}/CHANGELOG.md#${releaseAnchor}'`)
     if (browseResult.code !== 0)
       throw createError.InternalServerError(`Release succeded, but unable to browse to CHANGELOG.md for ${projectFQN}.`)
   }
