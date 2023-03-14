@@ -24,7 +24,7 @@
   "homepage": "https://github.com/liquid-labs/liq-projects#readme",
   "liq": {
     "orgBase": "git@github.com:liquid-labs/Liquid-Labs.git",
-    "packageType": "node|server",
+    "packageType": "node|server|lib",
     "tags": [
       "plugin:liq-core",
       "type:plugin:liq-core",
@@ -34,7 +34,7 @@
   "devDependencies": {
     "@liquid-labs/catalyst-scripts": "^1.0.0-alpha.57",
     "@liquid-labs/federated-json": "^1.0.0-alpha.31",
-    "@liquid-labs/git-toolkit": "^1.0.0-alpha.4",
+    "@liquid-labs/git-toolkit": "^1.0.0-alpha.9",
     "@liquid-labs/http-smart-response": "^1.0.0-alpha.3",
     "@liquid-labs/liq-handlers-lib": "^1.0.0-alpha.12",
     "@liquid-labs/versioning": "^1.0.0-alpha.1",
@@ -42,7 +42,7 @@
     "natural-sort": "^1.0.0"
   },
   "dependencies": {
-    "@liquid-labs/github-toolkit": "^1.0.0-alpha.4",
+    "@liquid-labs/github-toolkit": "^1.0.0-alpha.5",
     "@liquid-labs/liq-qa-lib": "file:.yalc/@liquid-labs/liq-qa-lib",
     "http-errors": "^2.0.0",
     "shelljs": "^0.8.5"
