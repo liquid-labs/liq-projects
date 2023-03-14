@@ -1,8 +1,13 @@
 import createError from 'http-errors'
 import shell from 'shelljs'
 
-import { determineCurrentBranch, determineOriginAndMain } from '@liquid-labs/github-toolkit'
-import { releaseBranchName, verifyClean, verifyMainBranchUpToDate } from '@liquid-labs/git-toolkit'
+import {
+  determineCurrentBranch,
+  determineOriginAndMain,
+  releaseBranchName,
+  verifyClean,
+  verifyMainBranchUpToDate
+} from '@liquid-labs/git-toolkit'
 import { httpSmartResponse } from '@liquid-labs/http-smart-response'
 import { cleanupQAFiles, runQA, saveQAFiles } from '@liquid-labs/liq-qa-lib'
 import { nextVersion } from '@liquid-labs/versioning'
@@ -49,7 +54,7 @@ const func = ({ app, model, reporter }) => async(req, res) => {
   const pkgData = await getPackageData({ orgKey, localProjectName, projectPath : req.vars.projectPath })
 
   const { packageSpec, projectFQN, projectPath } = pkgData
-  const [originRemote, mainBranch] = determineOriginAndMain(({ projectPath, reporter }))
+  const [originRemote, mainBranch] = determineOriginAndMain({ projectPath, reporter })
 
   const currentBranch = determineCurrentBranch({ projectPath, reporter })
 
