@@ -1,6 +1,9 @@
 import * as fsPath from 'node:path'
 
+import createError from 'http-errors'
+
 import { getOrgFromKey } from '@liquid-labs/liq-handlers-lib'
+import { determineCurrentBranch, determineLocalMain } from '@liquid-labs/git-toolkit'
 import {
   checkGitHubAPIAccess,
   checkGitHubSSHAccess,
@@ -67,11 +70,18 @@ const func = ({ app, model, reporter }) => async(req, res) => {
   const githubOrg = org.getSetting(GITHUB_REPO_KEY)
   const projectFQN = githubOrg + '/' + localProjectName
 
+  const localMain = determineLocalMain({ projectPath })
+  const currentBranch = determineCurrentBranch({ projectPath })
+
+  if (localMain !== currentBranch) {
+    throw createError.BadRequest(`Project must be on main branch '${localMain}' (is on '${currentBranch}').`)
+  }
+
   reporter = reporter?.isolate()
   if (skipLabels !== true) await setupGitHubLabels({ noDeleteLabels, noUpdateLabels, projectFQN, reporter })
   if (skipMilestones !== true) await setupGitHubMilestones({ model, projectFQN, projectPath, reporter, unpublished })
   if (noUpdateOriginName !== true) regularizeRemote({ projectPath, reporter })
-  if (noUpdateMainBranch !== true) regularizeMainBranch({ projectFQN, projectPath, reporter })
+  if (noUpdateMainBranch !== true) await regularizeMainBranch({ projectFQN, projectPath, reporter })
 
   res.type('text/plain').send(reporter.taskReport.join('\n'))
 }
