@@ -7,7 +7,7 @@ import { doDetail, getDetailEndpointParameters } from './_lib/detail-lib'
 
 const path = ['projects', 'detail']
 
-const { help, method, parameters } = getDetailEndpointParameters({ workDesc : 'named' })
+const { help, method, parameters } = getDetailEndpointParameters({ workDesc : 'implied' })
 
 const func = ({ model, reporter }) => async(req, res) => {
   reporter = reporter.isolate()

@@ -6,7 +6,7 @@ import { doDocument, getDocumentEndpointParameters } from './_lib/document-lib'
 
 const path = ['projects', 'document']
 
-const { help, method, parameters } = getDocumentEndpointParameters({ workDesc : 'named' })
+const { help, method, parameters } = getDocumentEndpointParameters({ workDesc : 'implied' })
 
 const func = ({ model, reporter }) => async(req, res) => {
   reporter = reporter.isolate()

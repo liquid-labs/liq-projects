@@ -15,9 +15,9 @@ import { getPackageData } from './get-package-data'
  */
 const getRenameEndpointParameters = ({ workDesc }) => {
   const help = {
-    name        : 'Project rename',
-    summary     : 'Renames local and GitHub projects names and updates git configuration.',
-    description : `Renames local and GitHub projects names and updates git configuration. It is safe to make repeated calls and in the case of partial success, the process can be re-run is safe to repeat. By default, the process will do four things:
+    name        : `Project rename (${workDesc})`,
+    summary     : `Renames the ${workDesc} local and GitHub projects names and updates git configuration.`,
+    description : `Renames the ${workDesc} local and GitHub projects names and updates git configuration. It is safe to make repeated calls and in the case of partial success, the process can be re-run is safe to repeat. By default, the process will do four things:
 
 1. Rename the local project directory.
 2. Rename the GitHub project.

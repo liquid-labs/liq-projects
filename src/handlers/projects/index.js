@@ -12,6 +12,7 @@ import * as documentImpliedHandler from './document-implied'
 import * as renameHandler from './rename'
 import * as renameImpliedHandler from './rename-implied'
 import * as setupHandler from './setup'
+import * as setupImpliedHandler from './setup-implied'
 
 handlers.push(
   archiveHandler,
@@ -25,7 +26,8 @@ handlers.push(
   documentImpliedHandler,
   renameHandler,
   renameImpliedHandler,
-  setupHandler
+  setupHandler,
+  setupImpliedHandler
 )
 
 export { handlers }

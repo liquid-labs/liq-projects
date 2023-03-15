@@ -12,7 +12,7 @@ const func = ({ model, reporter }) => async(req, res) => {
 
   const { localProjectName, orgKey } = req.vars
 
-  await doRename({ orgKey, localProjectName, req, res })
+  await doRename({ localProjectName, model, orgKey, reporter, req, res })
 }
 
 export {
