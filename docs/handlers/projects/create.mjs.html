@@ -1,0 +1,287 @@
+<html>
+  <head>
+    <title>create.mjs</title>
+
+    <style>
+      body {
+        text-align: left;
+      }
+
+      pre {
+        text-align: left;
+        display: inline-block;
+        max-width: 120em;
+        margin: 1em 1em;
+        padding: 1em 1em;
+        border-top: solid blue 1px;
+        border-right: solid blue 1px;
+        border-bottom: solid blue 1px;
+        white-space: pre-wrap;
+      }
+    </style>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/base16/google-light.min.css">
+  </head>
+  <body>
+    <pre><code>
+<span class="hljs-keyword">import</span> * <span class="hljs-keyword">as</span> fs <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;node:fs/promises&#x27;</span>
+
+<span class="hljs-keyword">import</span> shell <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;shelljs&#x27;</span>
+
+<span class="hljs-keyword">import</span> { readFJSON, writeFJSON } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;@liquid-labs/federated-json&#x27;</span>
+<span class="hljs-keyword">import</span> { getOrgFromKey } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;@liquid-labs/liq-handlers-lib&#x27;</span>
+<span class="hljs-keyword">import</span> {
+  checkGitHubAPIAccess,
+  checkGitHubSSHAccess,
+  setupGitHubLabels,
+  setupGitHubMilestones
+} <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;@liquid-labs/github-toolkit&#x27;</span>
+
+<span class="hljs-keyword">import</span> { commonProjectSetupParameters } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;./_lib/common-project-setup-parameters&#x27;</span>
+<span class="hljs-keyword">import</span> { <span class="hljs-variable constant_">DEFAULT_LICENSE</span>, <span class="hljs-variable constant_">DEFAULT_VERSION</span>, <span class="hljs-variable constant_">GITHUB_REPO_KEY</span> } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;./_lib/common-constants&#x27;</span>
+
+<span class="hljs-keyword">const</span> method = <span class="hljs-string">&#x27;post&#x27;</span>
+<span class="hljs-keyword">const</span> paths = [
+  [<span class="hljs-string">&#x27;projects&#x27;</span>, <span class="hljs-string">&#x27;:orgKey&#x27;</span>, <span class="hljs-string">&#x27;:newProjectName&#x27;</span>, <span class="hljs-string">&#x27;create&#x27;</span>],
+  [<span class="hljs-string">&#x27;orgs&#x27;</span>, <span class="hljs-string">&#x27;:orgKey&#x27;</span>, <span class="hljs-string">&#x27;projects&#x27;</span>, <span class="hljs-string">&#x27;:newProjectName&#x27;</span>, <span class="hljs-string">&#x27;create&#x27;</span>]
+]
+<span class="hljs-keyword">const</span> parameters = [
+  {
+    name          : <span class="hljs-string">&#x27;description&#x27;</span>,
+    isSingleValue : <span class="hljs-literal">true</span>,
+    required      : <span class="hljs-literal">true</span>,
+    description   : <span class="hljs-string">&#x27;If provided, will be used to set the newly created package description.&#x27;</span>
+  },
+  {
+    name          : <span class="hljs-string">&#x27;license&#x27;</span>,
+    isSingleValue : <span class="hljs-literal">true</span>,
+    description   : <span class="hljs-string">`Sets the license string for the newly created package. If not provided, then defaults to org setting &#x27;ORG_DEFAULT_LICENSE&#x27; if set and &#x27;<span class="hljs-subst">${DEFAULT_LICENSE}</span>&#x27; otherwise.`</span>
+  },
+  {
+    name        : <span class="hljs-string">&#x27;noCleanup&#x27;</span>,
+    isBoolean   : <span class="hljs-literal">true</span>,
+    description : <span class="hljs-string">&#x27;By default, on error, the process will attempt to cleanup any artifacts created and restore everything to the state prior to invocation. If `noCleanup` is specified this behavior is suppressed.&#x27;</span>
+  },
+  {
+    name        : <span class="hljs-string">&#x27;noFork&#x27;</span>,
+    isBoolean   : <span class="hljs-literal">true</span>,
+    description : <span class="hljs-string">&#x27;Suppresses default behavior of proactively creating workspace fork for public repos.&#x27;</span>
+  },
+  {
+    name        : <span class="hljs-string">&#x27;public&#x27;</span>,
+    isBoolean   : <span class="hljs-literal">true</span>,
+    description : <span class="hljs-string">&#x27;By default, project repositories are created private. If `public` is set to true, then the repository will be made public.&#x27;</span>
+  },
+  {
+    name          : <span class="hljs-string">&#x27;version&#x27;</span>,
+    isSingleValue : <span class="hljs-literal">true</span>,
+    description   : <span class="hljs-string">`The version string to use for the newly initialized package \`version\` field. Defaults to &#x27;<span class="hljs-subst">${DEFAULT_VERSION}</span>&#x27;.`</span>
+  },
+  ...commonProjectSetupParameters
+]
+parameters.<span class="hljs-title function_">sort</span>(<span class="hljs-function">(<span class="hljs-params">a, b</span>) =&gt;</span> a.<span class="hljs-property">name</span>.<span class="hljs-title function_">localeCompare</span>(b.<span class="hljs-property">name</span>))
+<span class="hljs-title class_">Object</span>.<span class="hljs-title function_">freeze</span>(parameters)
+
+<span class="hljs-keyword">const</span> <span class="hljs-title function_">func</span> = (<span class="hljs-params">{ app, model, reporter }</span>) =&gt; <span class="hljs-title function_">async</span>(req, res) =&gt; {
+  <span class="hljs-keyword">const</span> org = <span class="hljs-title function_">getOrgFromKey</span>({ model, params : req.<span class="hljs-property">vars</span>, res })
+  <span class="hljs-keyword">if</span> (org === <span class="hljs-literal">false</span>) <span class="hljs-keyword">return</span>
+
+  <span class="hljs-keyword">const</span> {
+    description,
+    license,
+    orgKey,
+    newProjectName,
+    noCleanup,
+    noFork = <span class="hljs-literal">false</span>,
+    public : publicRepo = <span class="hljs-literal">false</span>,
+    skipLabels,
+    skipMilestones,
+    version = <span class="hljs-variable constant_">DEFAULT_VERSION</span>
+  } = req.<span class="hljs-property">vars</span>
+  <span class="hljs-keyword">const</span> orgGithubName = org.<span class="hljs-title function_">getSetting</span>(<span class="hljs-variable constant_">GITHUB_REPO_KEY</span>)
+  <span class="hljs-keyword">if</span> (!orgGithubName) {
+    res.<span class="hljs-title function_">status</span>(<span class="hljs-number">400</span>).<span class="hljs-title function_">type</span>(<span class="hljs-string">&#x27;text/plain&#x27;</span>).<span class="hljs-title function_">send</span>(<span class="hljs-string">`&#x27;<span class="hljs-subst">${GITHUB_REPO_KEY}</span>&#x27; not defined for org &#x27;<span class="hljs-subst">${orgKey}</span>&#x27;.`</span>)
+    <span class="hljs-keyword">return</span>
+  }
+
+  reporter.<span class="hljs-title function_">reset</span>()
+  reporter = reporter.<span class="hljs-title function_">isolate</span>()
+
+  reporter.<span class="hljs-title function_">push</span>(<span class="hljs-string">&#x27;Checking GitHub SSH access...&#x27;</span>)
+  <span class="hljs-title function_">checkGitHubSSHAccess</span>({ reporter }) <span class="hljs-comment">// the check will throw HTTP errors or failure</span>
+  reporter.<span class="hljs-title function_">push</span>(<span class="hljs-string">&#x27;Checking GitHub API access...&#x27;</span>)
+  <span class="hljs-keyword">await</span> <span class="hljs-title function_">checkGitHubAPIAccess</span>({ reporter }) <span class="hljs-comment">// ditto</span>
+
+  <span class="hljs-comment">// else we are good to proceed</span>
+  <span class="hljs-keyword">const</span> cleanupFuncs = {}
+  <span class="hljs-keyword">const</span> <span class="hljs-title function_">cleanup</span> = <span class="hljs-keyword">async</span>(<span class="hljs-params">{ msg, res, status }</span>) =&gt; {
+    <span class="hljs-keyword">if</span> (noCleanup === <span class="hljs-literal">true</span>) {
+      res.<span class="hljs-title function_">status</span>(status).<span class="hljs-title function_">type</span>(<span class="hljs-string">&#x27;text/plain&#x27;</span>).<span class="hljs-title function_">send</span>(<span class="hljs-string">`Failed to fully create &#x27;<span class="hljs-subst">${newProjectName}</span>&#x27;; no cleanup performed: <span class="hljs-subst">${msg}</span>`</span>)
+      <span class="hljs-keyword">return</span> <span class="hljs-literal">true</span>
+    }
+
+    <span class="hljs-keyword">const</span> successes = []
+    <span class="hljs-keyword">const</span> failures = []
+    <span class="hljs-keyword">let</span> success = <span class="hljs-literal">true</span>
+    <span class="hljs-keyword">for</span> (<span class="hljs-keyword">const</span> [func, desc] <span class="hljs-keyword">of</span> <span class="hljs-title class_">Object</span>.<span class="hljs-title function_">values</span>(cleanupFuncs)) {
+      <span class="hljs-keyword">try</span> {
+        success = <span class="hljs-keyword">await</span> <span class="hljs-title function_">func</span>() &amp;&amp; success
+        <span class="hljs-keyword">if</span> (!success) failures.<span class="hljs-title function_">push</span>(desc)
+        <span class="hljs-keyword">else</span> successes.<span class="hljs-title function_">push</span>(desc)
+      }
+      <span class="hljs-keyword">catch</span> (e) {
+        reporter.<span class="hljs-title function_">error</span>(e)
+        failures.<span class="hljs-title function_">push</span>(desc)
+      }
+    }
+
+    res.<span class="hljs-title function_">status</span>(status).<span class="hljs-title function_">type</span>(<span class="hljs-string">&#x27;text/plain&#x27;</span>)
+      .<span class="hljs-title function_">send</span>(msg + <span class="hljs-string">&#x27;\n\n&#x27;</span>
+      + <span class="hljs-string">&#x27;Cleanup appears to have &#x27;</span>
+        + (failures.<span class="hljs-property">length</span> === <span class="hljs-number">0</span>
+          ? <span class="hljs-string">&#x27;succeeded;\n&#x27;</span> + successes.<span class="hljs-title function_">join</span>(<span class="hljs-string">&#x27; succeeded\n&#x27;</span>) + <span class="hljs-string">&#x27; succeeded&#x27;</span>
+          : <span class="hljs-string">&#x27;failed;\n&#x27;</span> + failures.<span class="hljs-title function_">join</span>(<span class="hljs-string">&#x27; failed\n&#x27;</span>) + <span class="hljs-string">&#x27; failed&#x27;</span>))
+
+    <span class="hljs-keyword">return</span> failures.<span class="hljs-property">length</span> === <span class="hljs-number">0</span>
+  }
+
+  <span class="hljs-keyword">const</span> stagingDir = <span class="hljs-string">`<span class="hljs-subst">${app.liq.home()}</span>/tmp/liq-core/project-staging/<span class="hljs-subst">${newProjectName}</span>`</span>
+  <span class="hljs-keyword">const</span> qualifiedName = orgGithubName + <span class="hljs-string">&#x27;/&#x27;</span> + newProjectName
+
+  <span class="hljs-keyword">try</span> {
+    <span class="hljs-comment">// set up the staging directory</span>
+    reporter.<span class="hljs-title function_">push</span>(<span class="hljs-string">`Creating staging directory &#x27;<span class="hljs-subst">${newProjectName}</span>&#x27;: &lt;code&gt;<span class="hljs-subst">${stagingDir}</span>&lt;rst&gt;.`</span>)
+
+    <span class="hljs-keyword">await</span> fs.<span class="hljs-title function_">mkdir</span>(stagingDir, { recursive : <span class="hljs-literal">true</span> })
+
+    cleanupFuncs.<span class="hljs-property">stagingDir</span> = [
+      <span class="hljs-title function_">async</span>() =&gt; {
+        <span class="hljs-keyword">await</span> fs.<span class="hljs-title function_">rm</span>(stagingDir, { recursive : <span class="hljs-literal">true</span> })
+        <span class="hljs-keyword">return</span> <span class="hljs-literal">true</span>
+      },
+      <span class="hljs-string">&#x27;remove staging dir&#x27;</span>
+    ]
+
+    reporter.<span class="hljs-title function_">push</span>(<span class="hljs-string">`Initializing staging directory &#x27;<span class="hljs-subst">${newProjectName}</span>&#x27;.`</span>)
+    <span class="hljs-keyword">const</span> initResult = shell.<span class="hljs-title function_">exec</span>(<span class="hljs-string">`cd &quot;<span class="hljs-subst">${stagingDir}</span>&quot; &amp;&amp; git init --quiet . &amp;&amp; npm init -y &gt; /dev/null`</span>)
+    <span class="hljs-keyword">if</span> (initResult.<span class="hljs-property">code</span> !== <span class="hljs-number">0</span>) {
+      <span class="hljs-keyword">await</span> <span class="hljs-title function_">cleanup</span>({
+        msg    : <span class="hljs-string">`There was an error initalizing the local project in staging dir &#x27;<span class="hljs-subst">${stagingDir}</span>&#x27; (<span class="hljs-subst">${initResult.code}</span>):\n<span class="hljs-subst">${initResult.stderr}</span>`</span>,
+        res,
+        status : <span class="hljs-number">500</span>
+      })
+      <span class="hljs-keyword">return</span>
+    }
+
+    reporter.<span class="hljs-title function_">push</span>(<span class="hljs-string">`Updating &#x27;<span class="hljs-subst">${newProjectName}</span>&#x27; package.json...`</span>)
+    <span class="hljs-keyword">const</span> packagePath = stagingDir + <span class="hljs-string">&#x27;/package.json&#x27;</span>
+    <span class="hljs-keyword">const</span> packageJSON = <span class="hljs-title function_">readFJSON</span>(packagePath)
+
+    <span class="hljs-keyword">const</span> repoFragment = <span class="hljs-string">&#x27;github.com/&#x27;</span> + qualifiedName
+    <span class="hljs-keyword">const</span> repoURL = <span class="hljs-string">`git+ssh://git@<span class="hljs-subst">${repoFragment}</span>.git`</span>
+    <span class="hljs-keyword">const</span> bugsURL = <span class="hljs-string">`https://<span class="hljs-subst">${repoFragment}</span>/issues`</span>
+    <span class="hljs-keyword">const</span> homepage = <span class="hljs-string">`https://<span class="hljs-subst">${repoFragment}</span>#readme`</span>
+    <span class="hljs-keyword">const</span> pkgLicense = license || org.<span class="hljs-title function_">getSetting</span>(<span class="hljs-string">&#x27;ORG_DEFAULT_LICENSE&#x27;</span>) || <span class="hljs-variable constant_">DEFAULT_LICENSE</span>
+
+    packageJSON.<span class="hljs-property">name</span> = <span class="hljs-string">&#x27;@&#x27;</span> + qualifiedName
+    packageJSON.<span class="hljs-property">main</span> = <span class="hljs-string">`dist/<span class="hljs-subst">${newProjectName}</span>.js`</span>
+    packageJSON.<span class="hljs-property">version</span> = version
+    packageJSON.<span class="hljs-property">repository</span> = repoURL
+    packageJSON.<span class="hljs-property">bugs</span> = { url : bugsURL }
+    packageJSON.<span class="hljs-property">homepage</span> = homepage
+    packageJSON.<span class="hljs-property">license</span> = pkgLicense
+    <span class="hljs-keyword">if</span> (description) {
+      packageJSON.<span class="hljs-property">description</span> = description
+    }
+
+    <span class="hljs-title function_">writeFJSON</span>({ data : packageJSON, file : packagePath, noMeta : <span class="hljs-literal">true</span> })
+
+    reporter.<span class="hljs-title function_">push</span>(<span class="hljs-string">`Committing initial package.json to &#x27;<span class="hljs-subst">${newProjectName}</span>&#x27;...`</span>)
+    <span class="hljs-keyword">const</span> initCommitResult = shell.<span class="hljs-title function_">exec</span>(<span class="hljs-string">`cd &quot;<span class="hljs-subst">${stagingDir}</span>&quot; &amp;&amp; git add package.json &amp;&amp; git commit -m &quot;package initialization&quot;`</span>)
+    <span class="hljs-keyword">if</span> (initCommitResult.<span class="hljs-property">code</span> !== <span class="hljs-number">0</span>) {
+      <span class="hljs-keyword">await</span> <span class="hljs-title function_">cleanup</span>({
+        msg    : <span class="hljs-string">`Could not make initial project commit for &#x27;<span class="hljs-subst">${qualifiedName}</span>&#x27;.`</span>,
+        res,
+        status : <span class="hljs-number">500</span>
+      })
+      <span class="hljs-keyword">return</span>
+    }
+    reporter.<span class="hljs-title function_">push</span>(<span class="hljs-string">`Initialized local repository for project &#x27;<span class="hljs-subst">${qualifiedName}</span>&#x27;.`</span>)
+
+    reporter.<span class="hljs-title function_">push</span>(<span class="hljs-string">`Creating github repository for &#x27;<span class="hljs-subst">${newProjectName}</span>&#x27;...`</span>)
+    <span class="hljs-keyword">const</span> creationOpts = <span class="hljs-string">&#x27;--remote-name origin&#x27;</span>
+    + <span class="hljs-string">` -d &quot;<span class="hljs-subst">${description}</span>&quot;`</span>
+    + (publicRepo === <span class="hljs-literal">true</span> ? <span class="hljs-string">&#x27;&#x27;</span> : <span class="hljs-string">&#x27; --private&#x27;</span>)
+    <span class="hljs-keyword">const</span> hubCreateResult = shell.<span class="hljs-title function_">exec</span>(<span class="hljs-string">`cd &quot;<span class="hljs-subst">${stagingDir}</span>&quot; &amp;&amp; hub create <span class="hljs-subst">${creationOpts}</span> <span class="hljs-subst">${qualifiedName}</span>`</span>)
+    <span class="hljs-keyword">if</span> (hubCreateResult.<span class="hljs-property">code</span> !== <span class="hljs-number">0</span>) {
+      <span class="hljs-keyword">await</span> <span class="hljs-title function_">cleanup</span>({
+        msg    : <span class="hljs-string">`There was an error initalizing the github repo &#x27;<span class="hljs-subst">${qualifiedName}</span>&#x27; (<span class="hljs-subst">${hubCreateResult.code}</span>):\n<span class="hljs-subst">${hubCreateResult.stderr}</span>`</span>,
+        res,
+        status : <span class="hljs-number">500</span>
+      })
+      <span class="hljs-keyword">return</span>
+    }
+    reporter.<span class="hljs-title function_">push</span>(<span class="hljs-string">`Created GitHub repo &#x27;<span class="hljs-subst">${qualifiedName}</span>&#x27;.`</span>)
+
+    cleanupFuncs.<span class="hljs-property">githubRepo</span> = [
+      <span class="hljs-title function_">async</span>() =&gt; {
+        <span class="hljs-keyword">const</span> delResult = shell.<span class="hljs-title function_">exec</span>(<span class="hljs-string">`hub delete -y <span class="hljs-subst">${qualifiedName}</span>`</span>)
+        <span class="hljs-keyword">return</span> delResult.<span class="hljs-property">code</span> === <span class="hljs-number">0</span>
+      },
+      <span class="hljs-string">&#x27;delete GitHub repo&#x27;</span>
+    ]
+
+    reporter.<span class="hljs-title function_">push</span>(<span class="hljs-string">`Pushing &#x27;<span class="hljs-subst">${newProjectName}</span>&#x27; local updates to GitHub...`</span>)
+    <span class="hljs-keyword">let</span> retry = <span class="hljs-number">5</span> <span class="hljs-comment">// will try a total of four times</span>
+    <span class="hljs-keyword">const</span> pushCmd = <span class="hljs-string">`cd &quot;<span class="hljs-subst">${stagingDir}</span>&quot; &amp;&amp; git push --set-upstream origin main`</span>
+    <span class="hljs-keyword">let</span> pushResult = shell.<span class="hljs-title function_">exec</span>(pushCmd)
+    <span class="hljs-keyword">while</span> (pushResult.<span class="hljs-property">code</span> !== <span class="hljs-number">0</span> &amp;&amp; retry &gt; <span class="hljs-number">0</span>) {
+      reporter.<span class="hljs-title function_">push</span>(<span class="hljs-string">`Pausing for GitHub to catch up (<span class="hljs-subst">${retry}</span>)...`</span>)
+      <span class="hljs-keyword">await</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">Promise</span>(<span class="hljs-function"><span class="hljs-params">resolve</span> =&gt;</span> <span class="hljs-built_in">setTimeout</span>(resolve, <span class="hljs-number">2500</span>))
+      pushResult = shell.<span class="hljs-title function_">exec</span>(pushCmd)
+      retry -= <span class="hljs-number">1</span>
+    }
+    <span class="hljs-keyword">if</span> (pushResult.<span class="hljs-property">code</span> !== <span class="hljs-number">0</span>) {
+      <span class="hljs-keyword">await</span> <span class="hljs-title function_">cleanup</span>({ msg : <span class="hljs-string">&#x27;Could not push local staging dir changes to GitHub.&#x27;</span>, res, status : <span class="hljs-number">500</span> })
+      <span class="hljs-keyword">return</span>
+    }
+
+    <span class="hljs-keyword">if</span> (publicRepo === <span class="hljs-literal">true</span> &amp;&amp; noFork === <span class="hljs-literal">false</span>) {
+      <span class="hljs-keyword">const</span> forkResult = shell.<span class="hljs-title function_">exec</span>(<span class="hljs-string">&#x27;hub fork --remote-name workspace&#x27;</span>)
+      <span class="hljs-keyword">if</span> (forkResult.<span class="hljs-property">code</span> === <span class="hljs-number">0</span>) reporter.<span class="hljs-title function_">push</span>(<span class="hljs-string">`Created personal workspace fork for &#x27;<span class="hljs-subst">${qualifiedName}</span>&#x27;.`</span>)
+      <span class="hljs-keyword">else</span> reporter.<span class="hljs-title function_">push</span>(<span class="hljs-string">&#x27;Failed to create personal workspace fork.&#x27;</span>)
+    }
+
+    <span class="hljs-keyword">if</span> (skipLabels !== <span class="hljs-literal">true</span>) <span class="hljs-keyword">await</span> <span class="hljs-title function_">setupGitHubLabels</span>({ projectFQN : qualifiedName, reporter })
+    <span class="hljs-keyword">if</span> (skipMilestones !== <span class="hljs-literal">true</span>) {
+      <span class="hljs-keyword">await</span> <span class="hljs-title function_">setupGitHubMilestones</span>({
+        model,
+        projectFQN  : qualifiedName,
+        projectPath : stagingDir,
+        reporter,
+        unpublished : <span class="hljs-literal">true</span>
+      })
+    }
+  }
+  <span class="hljs-keyword">catch</span> (e) {
+    <span class="hljs-keyword">await</span> <span class="hljs-title function_">cleanup</span>({ msg : <span class="hljs-string">`There was an error creating project &#x27;<span class="hljs-subst">${qualifiedName}</span>&#x27;; <span class="hljs-subst">${e.message}</span>`</span>, res, status : <span class="hljs-number">500</span> })
+    <span class="hljs-keyword">return</span>
+  }
+
+  <span class="hljs-keyword">await</span> fs.<span class="hljs-title function_">rename</span>(stagingDir, app.<span class="hljs-property">liq</span>.<span class="hljs-title function_">playground</span>() + <span class="hljs-string">&#x27;/&#x27;</span> + qualifiedName)
+
+  model.<span class="hljs-title function_">refreshModel</span>()
+
+  res.<span class="hljs-title function_">send</span>(reporter.<span class="hljs-property">taskReport</span>.<span class="hljs-title function_">join</span>(<span class="hljs-string">&#x27;\n&#x27;</span>)).<span class="hljs-title function_">end</span>()
+}
+
+<span class="hljs-keyword">export</span> {
+  func,
+  method,
+  parameters,
+  paths
+}
+
+    </code></pre>
+  </body>
+</html>

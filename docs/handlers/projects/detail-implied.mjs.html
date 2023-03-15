@@ -1,0 +1,60 @@
+<html>
+  <head>
+    <title>detail-implied.mjs</title>
+
+    <style>
+      body {
+        text-align: left;
+      }
+
+      pre {
+        text-align: left;
+        display: inline-block;
+        max-width: 120em;
+        margin: 1em 1em;
+        padding: 1em 1em;
+        border-top: solid blue 1px;
+        border-right: solid blue 1px;
+        border-bottom: solid blue 1px;
+        white-space: pre-wrap;
+      }
+    </style>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/base16/google-light.min.css">
+  </head>
+  <body>
+    <pre><code>
+<span class="hljs-comment">// <span class="hljs-doctag">TODO:</span> we should do more with this; expose liq-specific info. Right now, we&#x27;re duplicating playground/projects/get-package</span>
+<span class="hljs-keyword">import</span> createError <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;http-errors&#x27;</span>
+
+<span class="hljs-keyword">import</span> { determineImpliedProject } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;@liquid-labs/liq-projects-lib&#x27;</span>
+
+<span class="hljs-keyword">import</span> { doDetail, getDetailEndpointParameters } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;./_lib/detail-lib&#x27;</span>
+
+<span class="hljs-keyword">const</span> path = [<span class="hljs-string">&#x27;projects&#x27;</span>, <span class="hljs-string">&#x27;detail&#x27;</span>]
+
+<span class="hljs-keyword">const</span> { help, method, parameters } = <span class="hljs-title function_">getDetailEndpointParameters</span>({ workDesc : <span class="hljs-string">&#x27;named&#x27;</span> })
+
+<span class="hljs-keyword">const</span> <span class="hljs-title function_">func</span> = (<span class="hljs-params">{ model, reporter }</span>) =&gt; <span class="hljs-title function_">async</span>(req, res) =&gt; {
+  reporter = reporter.<span class="hljs-title function_">isolate</span>()
+
+  <span class="hljs-keyword">const</span> cwd = req.<span class="hljs-title function_">get</span>(<span class="hljs-string">&#x27;X-CWD&#x27;</span>)
+  <span class="hljs-keyword">if</span> (cwd === <span class="hljs-literal">undefined</span>) {
+    <span class="hljs-keyword">throw</span> createError.<span class="hljs-title class_">BadRequest</span>(<span class="hljs-string">&quot;Called &#x27;work detail&#x27; with implied work, but &#x27;X-CWD&#x27; header not found.&quot;</span>)
+  }
+  <span class="hljs-keyword">const</span> [orgKey, localProjectName] = <span class="hljs-title function_">determineImpliedProject</span>({ currDir : cwd }).<span class="hljs-title function_">split</span>(<span class="hljs-string">&#x27;/&#x27;</span>)
+
+  <span class="hljs-title function_">doDetail</span>({ localProjectName, model, orgKey, req, res })
+}
+
+<span class="hljs-keyword">export</span> {
+  func,
+  help,
+  method,
+  parameters,
+  path
+}
+
+    </code></pre>
+  </body>
+</html>

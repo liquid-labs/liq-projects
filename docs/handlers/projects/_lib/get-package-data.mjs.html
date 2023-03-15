@@ -4,8 +4,7 @@
 
     <style>
       body {
-        width: 100%;
-        text-align: center;
+        text-align: left;
       }
 
       pre {
@@ -17,6 +16,7 @@
         border-top: solid blue 1px;
         border-right: solid blue 1px;
         border-bottom: solid blue 1px;
+        white-space: pre-wrap;
       }
     </style>
 
@@ -28,17 +28,36 @@
 <span class="hljs-keyword">import</span> * <span class="hljs-keyword">as</span> fs <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;node:fs/promises&#x27;</span>
 <span class="hljs-keyword">import</span> * <span class="hljs-keyword">as</span> fsPath <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;node:path&#x27;</span>
 
-<span class="hljs-keyword">const</span> <span class="hljs-title function_">getPackageData</span> = <span class="hljs-keyword">async</span> (<span class="hljs-params">{ orgKey, localProjectName, requireImplements, res }</span>) =&gt; {
-  <span class="hljs-keyword">const</span> liqPlayground = process.<span class="hljs-property">env</span>.<span class="hljs-property">LIQ_HOME</span> || fsPath.<span class="hljs-title function_">join</span>(process.<span class="hljs-property">env</span>.<span class="hljs-property">HOME</span>, <span class="hljs-string">&#x27;.liq&#x27;</span>, <span class="hljs-string">&#x27;playground&#x27;</span>)
-  <span class="hljs-keyword">const</span> projectPath = fsPath.<span class="hljs-title function_">join</span>(liqPlayground, orgKey, localProjectName)
+<span class="hljs-keyword">import</span> createError <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;http-errors&#x27;</span>
+
+<span class="hljs-comment">/**
+ * Retrieve the `package.json` data while extracting commonly useful bits.
+ *
+ * #### Parameters
+ *
+ * - `localProjectName`: the local project base name within the org directory of the liq playground.
+ * - `orgKey`: the liq org key, corresponding to a local playground presence.
+ * - `projectPath`: where to look for the `package.json` file. You must provide either this parameter or both `orgKey`
+ *    and `localProjectName`.`
+ * - `requireImplements`: if set, then will investigation the `.liq.tags` in `package.json` for the required
+ *   implementation tags.
+ *
+ * #### Returns
+ *
+ * An info object containing:
+ * - `githubOrg`: the github org as extracted from the `package.json` `.name` field.
+ * - `projectBaseName`: the github project name as extracted from the `package.json` `.name` field.
+ * - `packageSpec`: the `package.json` data
+ * - `projectFQN`: the fully qualified project name as extracted from the `package.json` `.name` field.
+ * - `projectPath`: a reflection if passed in or, if not, constructed from the default location
+ */</span>
+<span class="hljs-keyword">const</span> <span class="hljs-title function_">getPackageData</span> = <span class="hljs-keyword">async</span>(<span class="hljs-params">{ orgKey, localProjectName, projectPath, requireImplements }</span>) =&gt; {
+  <span class="hljs-keyword">const</span> liqPlayground = fsPath.<span class="hljs-title function_">join</span>(process.<span class="hljs-property">env</span>.<span class="hljs-property">LIQ_HOME</span> || fsPath.<span class="hljs-title function_">join</span>(process.<span class="hljs-property">env</span>.<span class="hljs-property">HOME</span>, <span class="hljs-string">&#x27;.liq&#x27;</span>), <span class="hljs-string">&#x27;playground&#x27;</span>)
+  projectPath = projectPath || fsPath.<span class="hljs-title function_">join</span>(liqPlayground, orgKey, localProjectName)
   <span class="hljs-keyword">const</span> projectPkgPath = fsPath.<span class="hljs-title function_">join</span>(projectPath, <span class="hljs-string">&#x27;package.json&#x27;</span>)
-  <span class="hljs-keyword">const</span> projectFQN = orgKey + <span class="hljs-string">&#x27;/&#x27;</span> + localProjectName
+
   <span class="hljs-keyword">if</span> (!<span class="hljs-title function_">existsSync</span>(projectPkgPath)) {
-    res
-      .<span class="hljs-title function_">status</span>(<span class="hljs-number">404</span><span class="hljs-comment">/*Entity Not Found*/</span>)
-      .<span class="hljs-title function_">setHeader</span>(<span class="hljs-string">&#x27;content-type&#x27;</span>, <span class="hljs-string">&#x27;text/terminal&#x27;</span>)
-      .<span class="hljs-title function_">send</span>(<span class="hljs-string">`Could not locate local package file for project &lt;code&gt;<span class="hljs-subst">${projectFQN}</span>&lt;rst&gt;. Perhaps the project needs to be imported.`</span>)
-    <span class="hljs-keyword">return</span> <span class="hljs-literal">false</span>
+    <span class="hljs-keyword">throw</span> createError.<span class="hljs-title class_">NotFound</span>(<span class="hljs-string">`Could not locate local package file for project &lt;code&gt;<span class="hljs-subst">${localProjectName}</span>&lt;rst&gt;. Perhaps the project needs to be imported.`</span>)
   }
   <span class="hljs-comment">// else we have what looks like a project</span>
   <span class="hljs-keyword">let</span> packageSpec
@@ -47,34 +66,31 @@
     packageSpec = <span class="hljs-title class_">JSON</span>.<span class="hljs-title function_">parse</span>(packageContents)
   }
   <span class="hljs-keyword">catch</span> (e) {
-    res
-      .<span class="hljs-title function_">status</span>(<span class="hljs-number">400</span>)
-      .<span class="hljs-title function_">setHeader</span>(<span class="hljs-string">&#x27;content-type&#x27;</span>, <span class="hljs-string">&#x27;text/terminal&#x27;</span>)
-      .<span class="hljs-title function_">send</span>(<span class="hljs-string">`Could not process package definition. Ensure local project &lt;code&gt;<span class="hljs-subst">${projectFQN}</span>&lt;rst&gt; checkout contains a valid &lt;code&gt;package.json&lt;rst&gt; file. (<span class="hljs-subst">${e.message}</span>)`</span>)
-    <span class="hljs-keyword">return</span> <span class="hljs-literal">false</span>
+    <span class="hljs-keyword">throw</span> createError.<span class="hljs-title class_">BadRequest</span>(<span class="hljs-string">`Could not process package definition. Ensure local project &lt;code&gt;<span class="hljs-subst">${localProjectName}</span>&lt;rst&gt; checkout contains a valid &lt;code&gt;package.json&lt;rst&gt; file. (<span class="hljs-subst">${e.message}</span>)`</span>)
   }
 
+  <span class="hljs-keyword">let</span> projectFQN = packageSpec.<span class="hljs-property">name</span>
+  <span class="hljs-keyword">if</span> (projectFQN.<span class="hljs-title function_">startsWith</span>(<span class="hljs-string">&#x27;@&#x27;</span>)) projectFQN = projectFQN.<span class="hljs-title function_">slice</span>(<span class="hljs-number">1</span>)
+  <span class="hljs-keyword">const</span> [githubOrg, projectBaseName] = projectFQN.<span class="hljs-title function_">split</span>(<span class="hljs-string">&#x27;/&#x27;</span>)
+
   <span class="hljs-keyword">for</span> (<span class="hljs-keyword">const</span> reqImpl <span class="hljs-keyword">of</span> requireImplements || []) {
-	  <span class="hljs-keyword">const</span> documentationImplemented = packageSpec?.<span class="hljs-property">liq</span>?.<span class="hljs-property">tags</span>?.<span class="hljs-title function_">includes</span>(reqImpl)
-	  <span class="hljs-keyword">if</span> (documentationImplemented !== <span class="hljs-literal">true</span>) {
-	    res
-	      .<span class="hljs-title function_">status</span>(<span class="hljs-number">400</span>)
-	      .<span class="hljs-title function_">setHeader</span>(<span class="hljs-string">&#x27;content-type&#x27;</span>, <span class="hljs-string">&#x27;text/terminal&#x27;</span>)
-	      .<span class="hljs-title function_">send</span>(<span class="hljs-string">`The package spec does not mark required implementation &#x27;<span class="hljs-subst">${reqImpl}</span>&#x27;.`</span>)
-	    <span class="hljs-keyword">return</span> <span class="hljs-literal">false</span>
-	  }
-	}
+    <span class="hljs-keyword">const</span> isImplemented = packageSpec?.<span class="hljs-property">liq</span>?.<span class="hljs-property">tags</span>?.<span class="hljs-title function_">includes</span>(reqImpl)
+    <span class="hljs-keyword">if</span> (isImplemented !== <span class="hljs-literal">true</span>) {
+      <span class="hljs-keyword">throw</span> createError.<span class="hljs-title class_">BadRequest</span>(<span class="hljs-string">`The package spec does not mark required implementation &#x27;<span class="hljs-subst">${reqImpl}</span>&#x27;.`</span>)
+    }
+  }
 
   <span class="hljs-keyword">return</span> {
-  	<span class="hljs-attr">fqnProjectName</span>: orgKey + <span class="hljs-string">&#x27;/&#x27;</span> + localProjectName,
-  	packageSpec,
-  	projectFQN,
-  	localProjectName,
-  	projectPath
+    githubOrg,
+    projectBaseName,
+    packageSpec,
+    projectFQN,
+    projectPath
   }
 }
 
 <span class="hljs-keyword">export</span> { getPackageData }
+
     </code></pre>
   </body>
 </html>

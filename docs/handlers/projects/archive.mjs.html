@@ -1,0 +1,54 @@
+<html>
+  <head>
+    <title>archive.mjs</title>
+
+    <style>
+      body {
+        text-align: left;
+      }
+
+      pre {
+        text-align: left;
+        display: inline-block;
+        max-width: 120em;
+        margin: 1em 1em;
+        padding: 1em 1em;
+        border-top: solid blue 1px;
+        border-right: solid blue 1px;
+        border-bottom: solid blue 1px;
+        white-space: pre-wrap;
+      }
+    </style>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/base16/google-light.min.css">
+  </head>
+  <body>
+    <pre><code>
+<span class="hljs-keyword">import</span> { doArchive, getArchiveEndpointParameters } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;./_lib/archive-lib&#x27;</span>
+
+<span class="hljs-keyword">const</span> { help, method, parameters } = <span class="hljs-title function_">getArchiveEndpointParameters</span>({ workDesc : <span class="hljs-string">&#x27;named&#x27;</span> })
+
+<span class="hljs-keyword">const</span> paths = [
+  [<span class="hljs-string">&#x27;projects&#x27;</span>, <span class="hljs-string">&#x27;:orgKey&#x27;</span>, <span class="hljs-string">&#x27;:localProjectName&#x27;</span>, <span class="hljs-string">&#x27;archive&#x27;</span>],
+  [<span class="hljs-string">&#x27;orgs&#x27;</span>, <span class="hljs-string">&#x27;:orgKey&#x27;</span>, <span class="hljs-string">&#x27;projects&#x27;</span>, <span class="hljs-string">&#x27;:localProjectName&#x27;</span>, <span class="hljs-string">&#x27;archive&#x27;</span>]
+]
+
+<span class="hljs-keyword">const</span> <span class="hljs-title function_">func</span> = (<span class="hljs-params">{ app, cache, model, reporter }</span>) =&gt; <span class="hljs-title function_">async</span>(req, res) =&gt; {
+  reporter = reporter.<span class="hljs-title function_">isolate</span>()
+
+  <span class="hljs-keyword">const</span> { localProjectName, orgKey } = req.<span class="hljs-property">vars</span>
+
+  <span class="hljs-keyword">await</span> <span class="hljs-title function_">doArchive</span>({ app, cache, model, orgKey, localProjectName, reporter, res, req })
+}
+
+<span class="hljs-keyword">export</span> {
+  help,
+  func,
+  method,
+  parameters,
+  paths
+}
+
+    </code></pre>
+  </body>
+</html>

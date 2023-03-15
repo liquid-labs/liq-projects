@@ -1,0 +1,125 @@
+<html>
+  <head>
+    <title>archive-lib.mjs</title>
+
+    <style>
+      body {
+        text-align: left;
+      }
+
+      pre {
+        text-align: left;
+        display: inline-block;
+        max-width: 120em;
+        margin: 1em 1em;
+        padding: 1em 1em;
+        border-top: solid blue 1px;
+        border-right: solid blue 1px;
+        border-bottom: solid blue 1px;
+        white-space: pre-wrap;
+      }
+    </style>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/base16/google-light.min.css">
+  </head>
+  <body>
+    <pre><code>
+<span class="hljs-keyword">import</span> * <span class="hljs-keyword">as</span> fs <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;node:fs/promises&#x27;</span>
+
+<span class="hljs-keyword">import</span> createError <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;http-errors&#x27;</span>
+
+<span class="hljs-keyword">import</span> { checkGitHubAPIAccess } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;@liquid-labs/github-toolkit&#x27;</span>
+<span class="hljs-keyword">import</span> { verifyClean, verifyMainBranchUpToDate } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;@liquid-labs/git-toolkit&#x27;</span>
+<span class="hljs-keyword">import</span> { httpSmartResponse } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;@liquid-labs/http-smart-response&#x27;</span>
+<span class="hljs-keyword">import</span> { <span class="hljs-title class_">CredentialsDB</span>, purposes } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;@liquid-labs/liq-credentials-db&#x27;</span>
+<span class="hljs-keyword">import</span> { <span class="hljs-title class_">Octocache</span> } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;@liquid-labs/octocache&#x27;</span>
+
+<span class="hljs-keyword">import</span> { commonProjectPathParameters } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;./common-project-path-parameters&#x27;</span>
+<span class="hljs-keyword">import</span> { getPackageData } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;./get-package-data&#x27;</span>
+
+<span class="hljs-comment">/**
+ * Implements verifying local status and archiving repositories on GitHub. Used by the named and implied project
+ * archive endpoints.
+ */</span>
+<span class="hljs-keyword">const</span> <span class="hljs-title function_">doArchive</span> = <span class="hljs-keyword">async</span>(<span class="hljs-params">{ app, cache, model, orgKey, localProjectName, reporter, res, req }</span>) =&gt; {
+  <span class="hljs-keyword">await</span> <span class="hljs-title function_">checkGitHubAPIAccess</span>() <span class="hljs-comment">// throws HTTP Error on failure</span>
+
+  <span class="hljs-keyword">const</span> { keepLocal = <span class="hljs-literal">false</span> } = req.<span class="hljs-property">vars</span>
+
+  <span class="hljs-keyword">let</span> projectPath = req.<span class="hljs-property">vars</span>.<span class="hljs-property">projectPath</span> <span class="hljs-comment">// may be undefined; that&#x27;s OK; getPackageData will infer the default location</span>
+
+  <span class="hljs-keyword">const</span> pkgData = <span class="hljs-keyword">await</span> <span class="hljs-title function_">getPackageData</span>({ orgKey, localProjectName, projectPath })
+
+  <span class="hljs-keyword">const</span> { githubOrg, projectBaseName, projectFQN } = pkgData
+  projectPath = pkgData.<span class="hljs-property">projectPath</span>
+
+  <span class="hljs-title function_">verifyMainBranchUpToDate</span>({ reporter, ...pkgData })
+  <span class="hljs-title function_">verifyClean</span>({ reporter, ...pkgData })
+
+  <span class="hljs-comment">// <span class="hljs-doctag">TODO:</span> move to github-toolkit as &#x27;deleteGitHubProject&#x27;</span>
+  <span class="hljs-keyword">const</span> credDB = <span class="hljs-keyword">new</span> <span class="hljs-title class_">CredentialsDB</span>({ app, cache })
+  <span class="hljs-keyword">const</span> authToken = credDB.<span class="hljs-title function_">getToken</span>(purposes.<span class="hljs-property">GITHUB_API</span>)
+
+  <span class="hljs-keyword">const</span> octocache = <span class="hljs-keyword">new</span> <span class="hljs-title class_">Octocache</span>({ authToken })
+  <span class="hljs-keyword">try</span> {
+    reporter.<span class="hljs-title function_">push</span>(<span class="hljs-string">`About to achive <span class="hljs-subst">${githubOrg}</span>/<span class="hljs-subst">${projectBaseName}</span> on GitHub...`</span>)
+    <span class="hljs-keyword">const</span> results = <span class="hljs-keyword">await</span> octocache.<span class="hljs-title function_">request</span>(<span class="hljs-string">`PATCH /repos/<span class="hljs-subst">${githubOrg}</span>/<span class="hljs-subst">${projectBaseName}</span>`</span>, { archived : <span class="hljs-literal">true</span> })
+    reporter.<span class="hljs-title function_">push</span>(<span class="hljs-string">&#x27;  success.&#x27;</span>)
+    <span class="hljs-variable language_">console</span>.<span class="hljs-title function_">log</span>(results)
+  }
+  <span class="hljs-keyword">catch</span> (e) {
+    <span class="hljs-keyword">throw</span> createError.<span class="hljs-title class_">BadRequest</span>(<span class="hljs-string">`There was a problem archiving &#x27;<span class="hljs-subst">${projectFQN}</span>&#x27; on github: <span class="hljs-subst">${e.message}</span>`</span>, { cause : e })
+  }
+
+  <span class="hljs-keyword">if</span> (keepLocal !== <span class="hljs-literal">true</span>) {
+    <span class="hljs-keyword">try</span> {
+      reporter.<span class="hljs-title function_">push</span>(<span class="hljs-string">`About to &lt;em&gt;delete&lt;rst&gt; local project at &lt;code&gt;<span class="hljs-subst">${projectPath}</span>&lt;rst&gt;...`</span>)
+      <span class="hljs-keyword">await</span> fs.<span class="hljs-title function_">rm</span>(projectPath, { recursive : <span class="hljs-literal">true</span> })
+      reporter.<span class="hljs-title function_">push</span>(<span class="hljs-string">&#x27;  success.&#x27;</span>)
+    }
+    <span class="hljs-keyword">catch</span> (e) {
+      <span class="hljs-keyword">throw</span> createError.<span class="hljs-title class_">InternalServerError</span>(<span class="hljs-string">`Project &#x27;<span class="hljs-subst">${projectFQN}</span>&#x27; was archived on GitHub, but there was an error removing the local project at &#x27;<span class="hljs-subst">${projectPath}</span>&#x27;. Check and address manually.`</span>, { cause : e })
+    }
+
+    model.<span class="hljs-title function_">refreshModel</span>()
+  }
+  <span class="hljs-keyword">else</span> {
+    reporter.<span class="hljs-title function_">push</span>(<span class="hljs-string">&#x27;Skipping deletion of local project.&#x27;</span>)
+  }
+
+  <span class="hljs-keyword">let</span> msg = reporter.<span class="hljs-property">taskReport</span>.<span class="hljs-title function_">join</span>(<span class="hljs-string">&#x27;\n&#x27;</span>) + <span class="hljs-string">&#x27;\n\n&#x27;</span> + <span class="hljs-string">`&lt;em&gt;Archived&lt;rst&gt; &#x27;&lt;code&gt;<span class="hljs-subst">${projectFQN}</span>&lt;rst&gt;&#x27; on GitHub.`</span>
+  <span class="hljs-keyword">if</span> (keepLocal !== <span class="hljs-literal">true</span>) msg += <span class="hljs-string">&#x27; &lt;em&gt;Removed local project&lt;rst&gt;.&#x27;</span>
+
+  <span class="hljs-title function_">httpSmartResponse</span>({ msg, req, res })
+}
+
+<span class="hljs-comment">/**
+ * Defines parameters for named and implied project archive endpoints.
+ */</span>
+<span class="hljs-keyword">const</span> <span class="hljs-title function_">getArchiveEndpointParameters</span> = (<span class="hljs-params">{ workDesc }</span>) =&gt; {
+  <span class="hljs-keyword">const</span> parameters = [
+    {
+      name        : <span class="hljs-string">&#x27;keepLocal&#x27;</span>,
+      isBoolean   : <span class="hljs-literal">true</span>,
+      description : <span class="hljs-string">&#x27;If true, then will not remove the local project repo.&#x27;</span>
+    },
+    ...commonProjectPathParameters
+  ]
+  <span class="hljs-title class_">Object</span>.<span class="hljs-title function_">freeze</span>(parameters)
+
+  <span class="hljs-keyword">return</span> {
+    help : {
+      name        : <span class="hljs-string">`Project archive (<span class="hljs-subst">${workDesc}</span>)`</span>,
+      summary     : <span class="hljs-string">`Archives the <span class="hljs-subst">${workDesc}</span> project.`</span>,
+      description : <span class="hljs-string">`Archives the repository associated with the <span class="hljs-subst">${workDesc}</span> project on GitHub and deletes the local project. Use \`keepLocal\` to retain the local project.`</span>
+    },
+    method : <span class="hljs-string">&#x27;put&#x27;</span>,
+    parameters
+  }
+}
+
+<span class="hljs-keyword">export</span> { doArchive, getArchiveEndpointParameters }
+
+    </code></pre>
+  </body>
+</html>

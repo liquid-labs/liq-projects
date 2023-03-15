@@ -1,0 +1,212 @@
+<html>
+  <head>
+    <title>prepare-and-publish.mjs</title>
+
+    <style>
+      body {
+        text-align: left;
+      }
+
+      pre {
+        text-align: left;
+        display: inline-block;
+        max-width: 120em;
+        margin: 1em 1em;
+        padding: 1em 1em;
+        border-top: solid blue 1px;
+        border-right: solid blue 1px;
+        border-bottom: solid blue 1px;
+        white-space: pre-wrap;
+      }
+    </style>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/base16/google-light.min.css">
+  </head>
+  <body>
+    <pre><code>
+<span class="hljs-keyword">import</span> createError <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;http-errors&#x27;</span>
+<span class="hljs-keyword">import</span> shell <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;shelljs&#x27;</span>
+
+<span class="hljs-keyword">import</span> {
+  determineCurrentBranch,
+  determineOriginAndMain,
+  releaseBranchName,
+  verifyClean,
+  verifyMainBranchUpToDate
+} <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;@liquid-labs/git-toolkit&#x27;</span>
+<span class="hljs-keyword">import</span> { httpSmartResponse } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;@liquid-labs/http-smart-response&#x27;</span>
+<span class="hljs-keyword">import</span> { cleanupQAFiles, runQA, saveQAFiles } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;@liquid-labs/liq-qa-lib&#x27;</span>
+<span class="hljs-keyword">import</span> { nextVersion } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;@liquid-labs/versioning&#x27;</span>
+
+<span class="hljs-keyword">import</span> { commonProjectPathParameters } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;../_lib/common-project-path-parameters&#x27;</span>
+<span class="hljs-keyword">import</span> { getPackageData } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;../_lib/get-package-data&#x27;</span>
+
+<span class="hljs-keyword">const</span> method = <span class="hljs-string">&#x27;post&#x27;</span>
+<span class="hljs-keyword">const</span> paths = [
+  [<span class="hljs-string">&#x27;projects&#x27;</span>, <span class="hljs-string">&#x27;:orgKey&#x27;</span>, <span class="hljs-string">&#x27;:localProjectName&#x27;</span>, <span class="hljs-string">&#x27;releases&#x27;</span>, <span class="hljs-string">&#x27;prepare-and-publish&#x27;</span>],
+  [<span class="hljs-string">&#x27;orgs&#x27;</span>, <span class="hljs-string">&#x27;:orgKey&#x27;</span>, <span class="hljs-string">&#x27;projects&#x27;</span>, <span class="hljs-string">&#x27;:localProjectName&#x27;</span>, <span class="hljs-string">&#x27;releases&#x27;</span>, <span class="hljs-string">&#x27;prepare-and-publish&#x27;</span>]
+]
+<span class="hljs-keyword">const</span> parameters = [
+  {
+    name        : <span class="hljs-string">&#x27;increment&#x27;</span>,
+    description : <span class="hljs-string">&#x27;Indicates how to increment the version for this release.&#x27;</span>,
+    matcher     : <span class="hljs-regexp">/^(?:major|minor|patch|premajor|preminor|prepatch|prerelease|pretype)$/</span>
+  },
+  {
+    name        : <span class="hljs-string">&#x27;noBrowser&#x27;</span>,
+    isBoolean   : <span class="hljs-literal">true</span>,
+    description : <span class="hljs-string">&#x27;If true, supresses launching of browser to show changelog page.&#x27;</span>
+  },
+  {
+    name        : <span class="hljs-string">&#x27;noPublish&#x27;</span>,
+    isBoolean   : <span class="hljs-literal">true</span>,
+    description : <span class="hljs-string">&#x27;If true, prepares but does not publish the package.&#x27;</span>
+  },
+  {
+    name        : <span class="hljs-string">&#x27;otp&#x27;</span>,
+    description : <span class="hljs-string">&#x27;One time password to be used when publishing the project.&#x27;</span>
+  },
+  ...commonProjectPathParameters
+]
+parameters.<span class="hljs-title function_">sort</span>(<span class="hljs-function">(<span class="hljs-params">a, b</span>) =&gt;</span> a.<span class="hljs-property">name</span>.<span class="hljs-title function_">localeCompare</span>(b.<span class="hljs-property">name</span>))
+<span class="hljs-title class_">Object</span>.<span class="hljs-title function_">freeze</span>(parameters)
+
+<span class="hljs-keyword">const</span> <span class="hljs-title function_">func</span> = (<span class="hljs-params">{ app, model, reporter }</span>) =&gt; <span class="hljs-title function_">async</span>(req, res) =&gt; {
+  reporter.<span class="hljs-title function_">reset</span>()
+  reporter = reporter.<span class="hljs-title function_">isolate</span>()
+
+  <span class="hljs-keyword">const</span> { increment, orgKey, localProjectName, <span class="hljs-comment">/* noBrowser, */</span> noPublish = <span class="hljs-literal">false</span>, otp } = req.<span class="hljs-property">vars</span>
+
+  <span class="hljs-keyword">const</span> pkgData = <span class="hljs-keyword">await</span> <span class="hljs-title function_">getPackageData</span>({ orgKey, localProjectName, projectPath : req.<span class="hljs-property">vars</span>.<span class="hljs-property">projectPath</span> })
+
+  <span class="hljs-keyword">const</span> { packageSpec, projectFQN, projectPath } = pkgData
+  <span class="hljs-keyword">const</span> [originRemote, mainBranch] = <span class="hljs-title function_">determineOriginAndMain</span>({ projectPath, reporter })
+
+  <span class="hljs-keyword">const</span> currentBranch = <span class="hljs-title function_">determineCurrentBranch</span>({ projectPath, reporter })
+
+  <span class="hljs-keyword">const</span> currVer = packageSpec.<span class="hljs-property">version</span>
+  <span class="hljs-keyword">let</span> nextVer
+  <span class="hljs-keyword">if</span> (currentBranch.<span class="hljs-title function_">startsWith</span>(<span class="hljs-string">&#x27;release-&#x27;</span>)) { <span class="hljs-comment">// it looks like we&#x27;re already on the release branch</span>
+    nextVer = currentBranch.<span class="hljs-title function_">replace</span>(<span class="hljs-regexp">/^release-([0-9.]+(?:-(?:alpha|beta|rc)\.\d+)?)-.+$/</span>, <span class="hljs-string">&#x27;$1&#x27;</span>)
+  }
+  <span class="hljs-keyword">else</span> {
+    nextVer = <span class="hljs-title function_">nextVersion</span>({ currVer, increment })
+  }
+
+  <span class="hljs-keyword">const</span> releaseBranch = <span class="hljs-title function_">releaseBranchName</span>({ releaseVersion : nextVer })
+
+  <span class="hljs-title function_">verifyReadyForRelease</span>({
+    currentBranch,
+    mainBranch,
+    originRemote,
+    packageSpec,
+    projectPath,
+    releaseBranch,
+    reporter
+  })
+
+  <span class="hljs-keyword">if</span> (currentBranch === mainBranch) {
+    <span class="hljs-keyword">const</span> checkoutResult = shell.<span class="hljs-title function_">exec</span>(<span class="hljs-string">`cd &#x27;<span class="hljs-subst">${projectPath}</span>&#x27; &amp;&amp; git checkout --quiet -b &#x27;<span class="hljs-subst">${releaseBranch}</span>&#x27;`</span>)
+    <span class="hljs-keyword">if</span> (checkoutResult.<span class="hljs-property">code</span> !== <span class="hljs-number">0</span>) { <span class="hljs-keyword">throw</span> createError.<span class="hljs-title class_">InternalServerError</span>(<span class="hljs-string">`Failed to checkout release branch &#x27;<span class="hljs-subst">${releaseBranch}</span>&#x27;: <span class="hljs-subst">${checkoutResult.stderr}</span>`</span>) }
+  }
+  <span class="hljs-comment">// else, we are on the release branch, as checked by &#x27;verifyReadyForRelease&#x27;</span>
+  <span class="hljs-comment">// <span class="hljs-doctag">TODO:</span> generate changelog once &#x27;work&#x27; history is defined</span>
+
+  <span class="hljs-keyword">const</span> buildResult = shell.<span class="hljs-title function_">exec</span>(<span class="hljs-string">`cd &#x27;<span class="hljs-subst">${projectPath}</span>&#x27; &amp;&amp; npm run build`</span>)
+  <span class="hljs-keyword">if</span> (buildResult.<span class="hljs-property">code</span> !== <span class="hljs-number">0</span>) <span class="hljs-keyword">throw</span> createError.<span class="hljs-title class_">BadRequest</span>(<span class="hljs-string">&#x27;Could not build project for release.&#x27;</span>)
+
+  <span class="hljs-keyword">const</span> releaseTag = <span class="hljs-string">&#x27;v&#x27;</span> + nextVer
+
+  <span class="hljs-comment">// npm version will tag and commit</span>
+  <span class="hljs-keyword">if</span> (currVer !== nextVer) {
+    <span class="hljs-keyword">const</span> doCommit = <span class="hljs-title function_">saveQAFiles</span>({
+      commitMsg : <span class="hljs-string">`Saving QA files for release <span class="hljs-subst">${releaseTag}</span>.`</span>,
+      projectPath,
+      reporter
+    }).<span class="hljs-property">length</span> &gt; <span class="hljs-number">0</span>
+
+    reporter.<span class="hljs-title function_">push</span>(<span class="hljs-string">&#x27;Updating package version...&#x27;</span>)
+    <span class="hljs-keyword">const</span> versionResult = shell.<span class="hljs-title function_">exec</span>(<span class="hljs-string">`cd &#x27;<span class="hljs-subst">${projectPath}</span>&#x27; &amp;&amp; npm version <span class="hljs-subst">${nextVer}</span>`</span>)
+    <span class="hljs-keyword">if</span> (versionResult.<span class="hljs-property">code</span> !== <span class="hljs-number">0</span>) { <span class="hljs-keyword">throw</span> createError.<span class="hljs-title class_">InternalServerError</span>(<span class="hljs-string">`&#x27;npm version <span class="hljs-subst">${nextVer}</span>&#x27; failed; address or update manually; stderr: <span class="hljs-subst">${versionResult.stderr}</span>`</span>) }
+
+    <span class="hljs-keyword">if</span> (doCommit) {
+      <span class="hljs-title function_">cleanupQAFiles</span>({ projectPath, reporter })
+    }
+  }
+  <span class="hljs-keyword">else</span> reporter.<span class="hljs-title function_">push</span>(<span class="hljs-string">&#x27;Version already updated&#x27;</span>)
+
+  reporter.<span class="hljs-title function_">push</span>(<span class="hljs-string">`Pushing release tag &#x27;<span class="hljs-subst">${releaseTag}</span>&#x27; to <span class="hljs-subst">${originRemote}</span> remote...`</span>) <span class="hljs-comment">// <span class="hljs-doctag">TODO:</span> doe</span>
+  <span class="hljs-keyword">const</span> pushTagsResult = shell.<span class="hljs-title function_">exec</span>(<span class="hljs-string">`cd &#x27;<span class="hljs-subst">${projectPath}</span>&#x27; &amp;&amp; git push <span class="hljs-subst">${originRemote}</span> <span class="hljs-subst">${releaseTag}</span>`</span>)
+  <span class="hljs-keyword">if</span> (pushTagsResult.<span class="hljs-property">code</span> !== <span class="hljs-number">0</span>) { <span class="hljs-keyword">throw</span> createError.<span class="hljs-title class_">InternalServerError</span>(<span class="hljs-string">`Failed to push version release tag <span class="hljs-subst">${releaseTag}</span>: <span class="hljs-subst">${pushTagsResult.stderr}</span>`</span>) }
+
+  <span class="hljs-keyword">if</span> (noPublish !== <span class="hljs-literal">true</span>) {
+    reporter.<span class="hljs-title function_">push</span>(<span class="hljs-string">&#x27;Preparing to publish...&#x27;</span>)
+    <span class="hljs-keyword">const</span> pushCmd = <span class="hljs-string">`cd &#x27;<span class="hljs-subst">${projectPath}</span>&#x27; &amp;&amp; npm publish<span class="hljs-subst">${otp === <span class="hljs-literal">undefined</span> ? <span class="hljs-string">&#x27;&#x27;</span> : <span class="hljs-string">` --otp=<span class="hljs-subst">${otp}</span>`</span>}</span>`</span>
+    <span class="hljs-keyword">const</span> publishResult = shell.<span class="hljs-title function_">exec</span>(pushCmd, { timout : <span class="hljs-number">1500</span> <span class="hljs-comment">/* 1.5 sec */</span> })
+    <span class="hljs-keyword">if</span> (publishResult.<span class="hljs-property">code</span> !== <span class="hljs-number">0</span>) { <span class="hljs-keyword">throw</span> <span class="hljs-title function_">createError</span>(<span class="hljs-string">`Project &#x27;<span class="hljs-subst">${projectFQN}</span>&#x27; preparation succeeded, but was unable to publish to npm; perhaps you need to include the &#x27;otp&#x27; option? Stderr: <span class="hljs-subst">${publishResult.stderr}</span>`</span>) }
+  }
+
+  reporter.<span class="hljs-title function_">push</span>(<span class="hljs-string">`Merging release branch &#x27;<span class="hljs-subst">${releaseBranch}</span>&#x27; to &#x27;<span class="hljs-subst">${mainBranch}</span>&#x27;...`</span>)
+  <span class="hljs-keyword">const</span> mergeResult =
+    shell.<span class="hljs-title function_">exec</span>(<span class="hljs-string">`cd &#x27;<span class="hljs-subst">${projectPath}</span>&#x27; &amp;&amp; git checkout &#x27;<span class="hljs-subst">${mainBranch}</span>&#x27; &amp;&amp; git merge -m &#x27;Merging auto-generated release branch (liq)&#x27; --no-ff &#x27;<span class="hljs-subst">${releaseBranch}</span>&#x27;`</span>)
+  <span class="hljs-keyword">if</span> (mergeResult.<span class="hljs-property">code</span> !== <span class="hljs-number">0</span>) <span class="hljs-keyword">throw</span> createError.<span class="hljs-title class_">InternalServerError</span>(<span class="hljs-string">`Could not merge release branch &#x27;<span class="hljs-subst">${releaseBranch}</span>&#x27; to &#x27;<span class="hljs-subst">${mainBranch}</span>&#x27;; address or merge manually.`</span>)
+
+  reporter.<span class="hljs-title function_">push</span>(<span class="hljs-string">&#x27;Deleting now merged release branch...&#x27;</span>)
+  <span class="hljs-keyword">const</span> deleteBranchResult = shell.<span class="hljs-title function_">exec</span>(<span class="hljs-string">`cd &#x27;<span class="hljs-subst">${projectPath}</span>&#x27; &amp;&amp; git branch -d &#x27;<span class="hljs-subst">${releaseBranch}</span>&#x27;`</span>)
+  <span class="hljs-keyword">if</span> (deleteBranchResult.<span class="hljs-property">code</span> !== <span class="hljs-number">0</span>) { <span class="hljs-keyword">throw</span> createError.<span class="hljs-title class_">InternalServerError</span>(<span class="hljs-string">`Could not delete release branch &#x27;<span class="hljs-subst">${releaseBranch}</span>&#x27;; manually delete.`</span>) }
+
+  reporter.<span class="hljs-title function_">push</span>(<span class="hljs-string">`Updating <span class="hljs-subst">${originRemote}</span>/<span class="hljs-subst">${mainBranch}</span>...`</span>)
+  <span class="hljs-keyword">const</span> pushResult = shell.<span class="hljs-title function_">exec</span>(<span class="hljs-string">`cd &#x27;<span class="hljs-subst">${projectPath}</span>&#x27; &amp;&amp; git push <span class="hljs-subst">${originRemote}</span> <span class="hljs-subst">${mainBranch}</span>`</span>)
+  <span class="hljs-keyword">if</span> (pushResult.<span class="hljs-property">code</span> !== <span class="hljs-number">0</span>) { <span class="hljs-keyword">throw</span> createError.<span class="hljs-title class_">InternalServerError</span>(<span class="hljs-string">`Failed to push merged &#x27;<span class="hljs-subst">${mainBranch}</span>&#x27; to remote &#x27;<span class="hljs-subst">${originRemote}</span>&#x27;; push manually.`</span>) }
+
+  <span class="hljs-comment">/* <span class="hljs-doctag">TODO:</span> open browser to
+  if (noBrowser === false) {
+    const releaseAnchor = `release-v${nextVer}`
+    const browseResult = shell.exec(`hub browse &#x27;${projectFQN}&#x27; &#x27;blob/${main}/CHANGELOG.md#${releaseAnchor}&#x27;`)
+    if (browseResult.code !== 0)
+      throw createError.InternalServerError(`Release succeded, but unable to browse to CHANGELOG.md for ${projectFQN}.`)
+  }
+  */</span>
+
+  <span class="hljs-title function_">httpSmartResponse</span>({ msg : reporter.<span class="hljs-property">taskReport</span>.<span class="hljs-title function_">join</span>(<span class="hljs-string">&#x27;\n&#x27;</span>), req, res })
+}
+
+<span class="hljs-comment">/**
+ * Verifies that the repo is ready for release by verifyirg we are on the main or release branch, the repo is clean,
+ * the main branch is up to date with the origin remote and vice-a-versa, and there is a package &#x27;qa&#x27; script that
+ * passes.
+ */</span>
+<span class="hljs-keyword">const</span> <span class="hljs-title function_">verifyReadyForRelease</span> = (<span class="hljs-params">{
+  currentBranch,
+  mainBranch,
+  originRemote,
+  packageSpec,
+  projectPath,
+  releaseBranch,
+  reporter
+}</span>) =&gt; {
+  <span class="hljs-comment">// verify we are on a valid branch</span>
+  reporter?.<span class="hljs-title function_">push</span>(<span class="hljs-string">&#x27;Checking current branch valid...&#x27;</span>)
+  <span class="hljs-keyword">if</span> (currentBranch === releaseBranch) reporter.<span class="hljs-title function_">push</span>(<span class="hljs-string">`  already on release branch <span class="hljs-subst">${releaseBranch}</span>.`</span>)
+  <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (currentBranch !== mainBranch) { <span class="hljs-keyword">throw</span> createError.<span class="hljs-title class_">BadRequest</span>(<span class="hljs-string">`Release branch can only be cut from main branch &#x27;<span class="hljs-subst">${mainBranch}</span>&#x27;; current branch: &#x27;<span class="hljs-subst">${currentBranch}</span>&#x27;.`</span>) }
+
+  <span class="hljs-title function_">verifyClean</span>({ projectPath, reporter })
+  <span class="hljs-title function_">verifyMainBranchUpToDate</span>({ projectPath, reporter })
+  <span class="hljs-title function_">runQA</span>({
+    msgFail     : <span class="hljs-string">&#x27;Project must pass QA prior to release.&#x27;</span>,
+    msgNoScript : <span class="hljs-string">&quot;You must define a &#x27;qa&#x27; script to be run prior to release.&quot;</span>,
+    packageSpec,
+    projectPath
+  })
+}
+
+<span class="hljs-keyword">export</span> {
+  func,
+  method,
+  parameters,
+  paths
+}
+
+    </code></pre>
+  </body>
+</html>

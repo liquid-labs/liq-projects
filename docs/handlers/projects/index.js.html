@@ -4,8 +4,7 @@
 
     <style>
       body {
-        width: 100%;
-        text-align: center;
+        text-align: left;
       }
 
       pre {
@@ -17,6 +16,7 @@
         border-top: solid blue 1px;
         border-right: solid blue 1px;
         border-bottom: solid blue 1px;
+        white-space: pre-wrap;
       }
     </style>
 
@@ -24,11 +24,36 @@
   </head>
   <body>
     <pre><code>
-<span class="hljs-keyword">import</span> * <span class="hljs-keyword">as</span> documentHandler <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;./document&#x27;</span>
+<span class="hljs-keyword">import</span> { handlers } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;./releases&#x27;</span>
 
-<span class="hljs-keyword">const</span> handlers = [ documentHandler ]
+<span class="hljs-keyword">import</span> * <span class="hljs-keyword">as</span> archiveHandler <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;./archive&#x27;</span>
+<span class="hljs-keyword">import</span> * <span class="hljs-keyword">as</span> archiveImpliedHandler <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;./archive-implied&#x27;</span>
+<span class="hljs-keyword">import</span> * <span class="hljs-keyword">as</span> createHandler <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;./create&#x27;</span>
+<span class="hljs-keyword">import</span> * <span class="hljs-keyword">as</span> destroyHandler <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;./destroy&#x27;</span>
+<span class="hljs-keyword">import</span> * <span class="hljs-keyword">as</span> destroyImpliedHandler <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;./destroy-implied&#x27;</span>
+<span class="hljs-keyword">import</span> * <span class="hljs-keyword">as</span> detailHandler <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;./detail&#x27;</span>
+<span class="hljs-keyword">import</span> * <span class="hljs-keyword">as</span> detailImpliedHandler <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;./detail-implied&#x27;</span>
+<span class="hljs-keyword">import</span> * <span class="hljs-keyword">as</span> documentHandler <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;./document&#x27;</span>
+<span class="hljs-keyword">import</span> * <span class="hljs-keyword">as</span> documentImpliedHandler <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;./document-implied&#x27;</span>
+<span class="hljs-keyword">import</span> * <span class="hljs-keyword">as</span> renameHandler <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;./rename&#x27;</span>
+<span class="hljs-keyword">import</span> * <span class="hljs-keyword">as</span> setupHandler <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;./setup&#x27;</span>
+
+handlers.<span class="hljs-title function_">push</span>(
+  archiveHandler,
+  archiveImpliedHandler,
+  createHandler,
+  destroyHandler,
+  destroyImpliedHandler,
+  detailHandler,
+  detailImpliedHandler,
+  documentHandler,
+  documentImpliedHandler,
+  renameHandler,
+  setupHandler
+)
 
 <span class="hljs-keyword">export</span> { handlers }
+
     </code></pre>
   </body>
 </html>

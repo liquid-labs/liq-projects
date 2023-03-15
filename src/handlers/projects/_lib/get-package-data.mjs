@@ -20,7 +20,7 @@ import createError from 'http-errors'
  *
  * An info object containing:
  * - `githubOrg`: the github org as extracted from the `package.json` `.name` field.
- * - `githubProjectBaseName`: the github project name as extracted from the `package.json` `.name` field.
+ * - `projectBaseName`: the github project name as extracted from the `package.json` `.name` field.
  * - `packageSpec`: the `package.json` data
  * - `projectFQN`: the fully qualified project name as extracted from the `package.json` `.name` field.
  * - `projectPath`: a reflection if passed in or, if not, constructed from the default location
@@ -45,7 +45,7 @@ const getPackageData = async({ orgKey, localProjectName, projectPath, requireImp
 
   let projectFQN = packageSpec.name
   if (projectFQN.startsWith('@')) projectFQN = projectFQN.slice(1)
-  const [githubOrg, githubProjectBaseName] = projectFQN.split('/')
+  const [githubOrg, projectBaseName] = projectFQN.split('/')
 
   for (const reqImpl of requireImplements || []) {
     const isImplemented = packageSpec?.liq?.tags?.includes(reqImpl)
@@ -56,7 +56,7 @@ const getPackageData = async({ orgKey, localProjectName, projectPath, requireImp
 
   return {
     githubOrg,
-    githubProjectBaseName,
+    projectBaseName,
     packageSpec,
     projectFQN,
     projectPath

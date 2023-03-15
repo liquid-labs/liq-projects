@@ -1,21 +1,33 @@
 import { handlers } from './releases'
 
 import * as archiveHandler from './archive'
+import * as archiveImpliedHandler from './archive-implied'
 import * as createHandler from './create'
 import * as destroyHandler from './destroy'
+import * as destroyImpliedHandler from './destroy-implied'
 import * as detailHandler from './detail'
+import * as detailImpliedHandler from './detail-implied'
 import * as documentHandler from './document'
+import * as documentImpliedHandler from './document-implied'
 import * as renameHandler from './rename'
+import * as renameImpliedHandler from './rename-implied'
 import * as setupHandler from './setup'
+import * as setupImpliedHandler from './setup-implied'
 
 handlers.push(
   archiveHandler,
+  archiveImpliedHandler,
   createHandler,
   destroyHandler,
+  destroyImpliedHandler,
   detailHandler,
+  detailImpliedHandler,
   documentHandler,
+  documentImpliedHandler,
   renameHandler,
-  setupHandler
+  renameImpliedHandler,
+  setupHandler,
+  setupImpliedHandler
 )
 
 export { handlers }

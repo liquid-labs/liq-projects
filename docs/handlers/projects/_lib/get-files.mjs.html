@@ -4,8 +4,7 @@
 
     <style>
       body {
-        width: 100%;
-        text-align: center;
+        text-align: left;
       }
 
       pre {
@@ -17,6 +16,7 @@
         border-top: solid blue 1px;
         border-right: solid blue 1px;
         border-bottom: solid blue 1px;
+        white-space: pre-wrap;
       }
     </style>
 
@@ -29,36 +29,36 @@
 
 <span class="hljs-comment">/**
  * Recursively retrieves file names for each file under &lt;code&gt;dir&lt;/code&gt;.
- * 
+ *
  * &lt;h2&gt;Parameters&lt;/h2&gt;
  * - dir: (req) The path to the starting point for the search.
  * - reName: (opt) If set, then the base file name must match &lt;code&gt;reName&lt;/code&gt; to be included.
  */</span>
-<span class="hljs-keyword">const</span> <span class="hljs-title function_">getFiles</span> = <span class="hljs-keyword">async</span> (<span class="hljs-params">{
+<span class="hljs-keyword">const</span> <span class="hljs-title function_">getFiles</span> = <span class="hljs-keyword">async</span>(<span class="hljs-params">{
   dir,
   depth,
-  ignoreDotFiles=<span class="hljs-literal">false</span>,
-  noRecurse=<span class="hljs-literal">false</span>,
-  onlyDirs=<span class="hljs-literal">false</span>,
+  ignoreDotFiles = <span class="hljs-literal">false</span>,
+  noRecurse = <span class="hljs-literal">false</span>,
+  onlyDirs = <span class="hljs-literal">false</span>,
   reName
 }</span>) =&gt; {
   <span class="hljs-keyword">if</span> (noRecurse === <span class="hljs-literal">true</span>) depth = <span class="hljs-number">1</span>
 
-  <span class="hljs-keyword">const</span> dirents = <span class="hljs-keyword">await</span> fs.<span class="hljs-title function_">readdir</span>(dir, { <span class="hljs-attr">withFileTypes</span>: <span class="hljs-literal">true</span> })
+  <span class="hljs-keyword">const</span> dirents = <span class="hljs-keyword">await</span> fs.<span class="hljs-title function_">readdir</span>(dir, { withFileTypes : <span class="hljs-literal">true</span> })
 
   <span class="hljs-keyword">const</span> files = <span class="hljs-keyword">await</span> <span class="hljs-title class_">Promise</span>.<span class="hljs-title function_">all</span>(dirents.<span class="hljs-title function_">map</span>(<span class="hljs-function">(<span class="hljs-params">dirent</span>) =&gt;</span> {
     <span class="hljs-keyword">const</span> res = fsPath.<span class="hljs-title function_">resolve</span>(dir, dirent.<span class="hljs-property">name</span>)
     <span class="hljs-keyword">if</span> (dirent.<span class="hljs-title function_">isDirectory</span>()) {
       <span class="hljs-keyword">const</span> newDepth = depth === <span class="hljs-literal">undefined</span> ? <span class="hljs-literal">undefined</span> : depth - <span class="hljs-number">1</span>
 
-      <span class="hljs-keyword">const</span> dirResults = onlyDirs === <span class="hljs-literal">true</span> 
-          &amp;&amp; (ignoreDotFiles === <span class="hljs-literal">false</span> || !fsPath.<span class="hljs-title function_">basename</span>(res).<span class="hljs-title function_">startsWith</span>(<span class="hljs-string">&#x27;.&#x27;</span>)) 
-        ? [ res ] 
+      <span class="hljs-keyword">const</span> dirResults = onlyDirs === <span class="hljs-literal">true</span>
+          &amp;&amp; (ignoreDotFiles === <span class="hljs-literal">false</span> || !fsPath.<span class="hljs-title function_">basename</span>(res).<span class="hljs-title function_">startsWith</span>(<span class="hljs-string">&#x27;.&#x27;</span>))
+        ? [res]
         : []
       <span class="hljs-keyword">if</span> (newDepth === <span class="hljs-number">0</span>) <span class="hljs-comment">/* then it was 1 */</span> <span class="hljs-keyword">return</span> dirResults
 
-      <span class="hljs-keyword">return</span> (<span class="hljs-keyword">async</span> () =&gt; {
-        <span class="hljs-keyword">return</span> dirResults.<span class="hljs-title function_">concat</span>(<span class="hljs-keyword">await</span> <span class="hljs-title function_">getFiles</span>({ <span class="hljs-attr">dir</span>: res, <span class="hljs-attr">depth</span>: newDepth, onlyDirs, reName }))
+      <span class="hljs-keyword">return</span> (<span class="hljs-title function_">async</span>() =&gt; {
+        <span class="hljs-keyword">return</span> dirResults.<span class="hljs-title function_">concat</span>(<span class="hljs-keyword">await</span> <span class="hljs-title function_">getFiles</span>({ dir : res, depth : newDepth, onlyDirs, reName }))
       })()
     }
     <span class="hljs-comment">// else</span>
@@ -73,6 +73,7 @@
 }
 
 <span class="hljs-keyword">export</span> { getFiles }
+
     </code></pre>
   </body>
 </html>
