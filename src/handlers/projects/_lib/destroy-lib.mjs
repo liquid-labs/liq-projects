@@ -12,6 +12,10 @@ import { Octocache } from '@liquid-labs/octocache'
 import { commonProjectPathParameters } from './common-project-path-parameters'
 import { getPackageData } from './get-package-data'
 
+/**
+ * Implements verifying local status and destroying repositories on GitHub. Used by the named and implied project
+ * destroy endpoints.
+ */
 const doDestroy = async({ app, cache, localProjectName, model, orgKey, reporter, req, res }) => {
   const { confirmed = false, noCopy = false } = req.vars
 
@@ -80,6 +84,9 @@ const doDestroy = async({ app, cache, localProjectName, model, orgKey, reporter,
   httpSmartResponse({ msg, req, res })
 }
 
+/**
+ * Defines parameters for named and implied project destroy endpoints.
+ */
 const getDestroyEndpointParameters = ({ workDesc }) => {
   const parameters = [
     {
