@@ -1,0 +1,124 @@
+<html>
+  <head>
+    <title>setup.mjs</title>
+
+    <style>
+      body {
+        text-align: left;
+      }
+
+      pre {
+        text-align: left;
+        display: inline-block;
+        max-width: 120em;
+        margin: 1em 1em;
+        padding: 1em 1em;
+        border-top: solid blue 1px;
+        border-right: solid blue 1px;
+        border-bottom: solid blue 1px;
+        white-space: pre-wrap;
+      }
+    </style>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/base16/google-light.min.css">
+  </head>
+  <body>
+    <pre><code>
+<span class="hljs-keyword">import</span> * <span class="hljs-keyword">as</span> fsPath <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;node:path&#x27;</span>
+
+<span class="hljs-keyword">import</span> createError <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;http-errors&#x27;</span>
+
+<span class="hljs-keyword">import</span> { getOrgFromKey } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;@liquid-labs/liq-handlers-lib&#x27;</span>
+<span class="hljs-keyword">import</span> { determineCurrentBranch, determineLocalMain } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;@liquid-labs/git-toolkit&#x27;</span>
+<span class="hljs-keyword">import</span> {
+  checkGitHubAPIAccess,
+  checkGitHubSSHAccess,
+  regularizeMainBranch,
+  regularizeRemote,
+  setupGitHubLabels,
+  setupGitHubMilestones
+} <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;@liquid-labs/github-toolkit&#x27;</span>
+
+<span class="hljs-keyword">import</span> { commonProjectPathParameters } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;./_lib/common-project-path-parameters&#x27;</span>
+<span class="hljs-keyword">import</span> { commonProjectSetupParameters } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;./_lib/common-project-setup-parameters&#x27;</span>
+<span class="hljs-keyword">import</span> { <span class="hljs-variable constant_">GITHUB_REPO_KEY</span> } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;./_lib/common-constants&#x27;</span>
+
+<span class="hljs-keyword">const</span> method = <span class="hljs-string">&#x27;post&#x27;</span>
+<span class="hljs-keyword">const</span> paths = [
+  [<span class="hljs-string">&#x27;projects&#x27;</span>, <span class="hljs-string">&#x27;:orgKey&#x27;</span>, <span class="hljs-string">&#x27;:localProjectName&#x27;</span>, <span class="hljs-string">&#x27;setup&#x27;</span>],
+  [<span class="hljs-string">&#x27;orgs&#x27;</span>, <span class="hljs-string">&#x27;:orgKey&#x27;</span>, <span class="hljs-string">&#x27;projects&#x27;</span>, <span class="hljs-string">&#x27;:localProjectName&#x27;</span>, <span class="hljs-string">&#x27;setup&#x27;</span>]
+]
+<span class="hljs-keyword">const</span> parameters = [
+  {
+    name        : <span class="hljs-string">&#x27;noUpdateMainBranch&#x27;</span>,
+    isBoolean   : <span class="hljs-literal">true</span>,
+    description : <span class="hljs-string">&quot;If true, the main branch will not be renamed even if it not standard &#x27;main&#x27;.&quot;</span>
+  },
+  {
+    name        : <span class="hljs-string">&#x27;noUpdateOriginRemote&#x27;</span>,
+    isBoolean   : <span class="hljs-literal">true</span>,
+    description : <span class="hljs-string">&quot;If true, the origin remote will not be renamed even if not standard &#x27;origin&#x27;.&quot;</span>
+  },
+  {
+    name        : <span class="hljs-string">&#x27;unpbulished&#x27;</span>,
+    isBoolean   : <span class="hljs-literal">true</span>,
+    description : <span class="hljs-string">&#x27;Set to true for new or otherwise unpblushed packages. By default, the process will query npm to get the latest version of the package for use with milestones setup. If set false, then this query is skipped and the local package data is used.&#x27;</span>
+  },
+  ...commonProjectPathParameters,
+  ...commonProjectSetupParameters
+]
+parameters.<span class="hljs-title function_">sort</span>(<span class="hljs-function">(<span class="hljs-params">a, b</span>) =&gt;</span> a.<span class="hljs-property">name</span>.<span class="hljs-title function_">localeCompare</span>(b.<span class="hljs-property">name</span>))
+<span class="hljs-title class_">Object</span>.<span class="hljs-title function_">freeze</span>(parameters)
+
+<span class="hljs-keyword">const</span> <span class="hljs-title function_">func</span> = (<span class="hljs-params">{ app, model, reporter }</span>) =&gt; <span class="hljs-title function_">async</span>(req, res) =&gt; {
+  <span class="hljs-keyword">const</span> org = <span class="hljs-title function_">getOrgFromKey</span>({ model, params : req.<span class="hljs-property">vars</span>, res })
+  <span class="hljs-keyword">if</span> (org === <span class="hljs-literal">false</span>) <span class="hljs-keyword">return</span>
+
+  reporter?.<span class="hljs-title function_">push</span>(<span class="hljs-string">&#x27;Checking GitHub SSH access...&#x27;</span>)
+  <span class="hljs-title function_">checkGitHubSSHAccess</span>({ reporter }) <span class="hljs-comment">// the check will throw HTTP errors if there&#x27;s a problem</span>
+  reporter?.<span class="hljs-title function_">push</span>(<span class="hljs-string">&#x27;Checking GitHub API access..&#x27;</span>)
+  <span class="hljs-keyword">await</span> <span class="hljs-title function_">checkGitHubAPIAccess</span>({ reporter }) <span class="hljs-comment">// ditto</span>
+
+  <span class="hljs-keyword">const</span> {
+    noDeleteLabels = <span class="hljs-literal">false</span>,
+    noUpdateLabels = <span class="hljs-literal">false</span>,
+    noUpdateMainBranch = <span class="hljs-literal">false</span>,
+    noUpdateOriginName = <span class="hljs-literal">false</span>,
+    orgKey,
+    localProjectName,
+    skipLabels = <span class="hljs-literal">false</span>,
+    skipMilestones = <span class="hljs-literal">false</span>,
+    unpublished = <span class="hljs-literal">false</span>
+  } = req.<span class="hljs-property">vars</span>
+
+  <span class="hljs-keyword">const</span> projectPath = req.<span class="hljs-property">vars</span>.<span class="hljs-property">projectPath</span>
+    || fsPath.<span class="hljs-title function_">join</span>(process.<span class="hljs-property">env</span>.<span class="hljs-property">HOME</span>, <span class="hljs-string">&#x27;.liq&#x27;</span>, <span class="hljs-string">&#x27;playground&#x27;</span>, orgKey, localProjectName)
+  <span class="hljs-keyword">const</span> githubOrg = org.<span class="hljs-title function_">getSetting</span>(<span class="hljs-variable constant_">GITHUB_REPO_KEY</span>)
+  <span class="hljs-keyword">const</span> projectFQN = githubOrg + <span class="hljs-string">&#x27;/&#x27;</span> + localProjectName
+
+  <span class="hljs-keyword">const</span> localMain = <span class="hljs-title function_">determineLocalMain</span>({ projectPath })
+  <span class="hljs-keyword">const</span> currentBranch = <span class="hljs-title function_">determineCurrentBranch</span>({ projectPath })
+
+  <span class="hljs-keyword">if</span> (localMain !== currentBranch) {
+    <span class="hljs-keyword">throw</span> createError.<span class="hljs-title class_">BadRequest</span>(<span class="hljs-string">`Project must be on main branch &#x27;<span class="hljs-subst">${localMain}</span>&#x27; (is on &#x27;<span class="hljs-subst">${currentBranch}</span>&#x27;).`</span>)
+  }
+
+  reporter = reporter?.<span class="hljs-title function_">isolate</span>()
+  <span class="hljs-keyword">if</span> (skipLabels !== <span class="hljs-literal">true</span>) <span class="hljs-keyword">await</span> <span class="hljs-title function_">setupGitHubLabels</span>({ noDeleteLabels, noUpdateLabels, projectFQN, reporter })
+  <span class="hljs-keyword">if</span> (skipMilestones !== <span class="hljs-literal">true</span>) <span class="hljs-keyword">await</span> <span class="hljs-title function_">setupGitHubMilestones</span>({ model, projectFQN, projectPath, reporter, unpublished })
+  <span class="hljs-keyword">if</span> (noUpdateOriginName !== <span class="hljs-literal">true</span>) <span class="hljs-title function_">regularizeRemote</span>({ projectPath, reporter })
+  <span class="hljs-keyword">if</span> (noUpdateMainBranch !== <span class="hljs-literal">true</span>) <span class="hljs-keyword">await</span> <span class="hljs-title function_">regularizeMainBranch</span>({ projectFQN, projectPath, reporter })
+
+  res.<span class="hljs-title function_">type</span>(<span class="hljs-string">&#x27;text/plain&#x27;</span>).<span class="hljs-title function_">send</span>(reporter.<span class="hljs-property">taskReport</span>.<span class="hljs-title function_">join</span>(<span class="hljs-string">&#x27;\n&#x27;</span>))
+}
+
+<span class="hljs-keyword">export</span> {
+  func,
+  method,
+  parameters,
+  paths
+}
+
+    </code></pre>
+  </body>
+</html>

@@ -1,6 +1,6 @@
 <html>
   <head>
-    <title>index.js</title>
+    <title>setup.mjs</title>
 
     <style>
       body {
@@ -24,13 +24,14 @@
   </head>
   <body>
     <pre><code>
-<span class="hljs-comment">// import { handlers as orgHandlers } from &#x27;./orgs&#x27;</span>
-<span class="hljs-comment">// import { handlers as projectHandlers } from &#x27;./projects&#x27;</span>
-<span class="hljs-keyword">import</span> { handlers } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;./projects&#x27;</span>
+<span class="hljs-keyword">const</span> <span class="hljs-title function_">setup</span> = (<span class="hljs-params">{ app, model, reporter }</span>) =&gt; {
+  app.<span class="hljs-property">liq</span>.<span class="hljs-property">pathResolvers</span>.<span class="hljs-property">newProjectName</span> = {
+    bitReString    : <span class="hljs-string">&#x27;[a-zA-Z][a-zA-Z0-9-]*&#x27;</span>,
+    optionsFetcher : <span class="hljs-function">() =&gt;</span> []
+  }
+}
 
-<span class="hljs-comment">// const handlers = [...orgHandlers].push(...projectHandlers)</span>
-
-<span class="hljs-keyword">export</span> { handlers }
+<span class="hljs-keyword">export</span> { setup }
 
     </code></pre>
   </body>

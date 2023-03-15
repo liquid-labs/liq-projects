@@ -1,0 +1,54 @@
+<html>
+  <head>
+    <title>common-project-setup-parameters.mjs</title>
+
+    <style>
+      body {
+        text-align: left;
+      }
+
+      pre {
+        text-align: left;
+        display: inline-block;
+        max-width: 120em;
+        margin: 1em 1em;
+        padding: 1em 1em;
+        border-top: solid blue 1px;
+        border-right: solid blue 1px;
+        border-bottom: solid blue 1px;
+        white-space: pre-wrap;
+      }
+    </style>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/base16/google-light.min.css">
+  </head>
+  <body>
+    <pre><code>
+<span class="hljs-keyword">const</span> commonProjectSetupParameters = [
+  {
+    name        : <span class="hljs-string">&#x27;noDeleteLabels&#x27;</span>,
+    isBoolean   : <span class="hljs-literal">true</span>,
+    description : <span class="hljs-string">&#x27;If true, then only missing labels will be added and any existing labels will be kept in place. Existing labels with the same name will be updated unless `noUpdateLabels` is set.&#x27;</span>
+  },
+  {
+    name        : <span class="hljs-string">&#x27;noUpdateLabels&#x27;</span>,
+    isBoolean   : <span class="hljs-literal">true</span>,
+    description : <span class="hljs-string">&#x27;If true, then existing labels with the same name as the canonical label set will be left unchanged. Thtey will still be deleted, however, unless `noUpdateLabels` is set.&#x27;</span>
+  },
+  {
+    name        : <span class="hljs-string">&#x27;skipLabels&#x27;</span>,
+    isBoolean   : <span class="hljs-literal">true</span>,
+    description : <span class="hljs-string">&#x27;If true, then the entire label normalization process will be skipped.&#x27;</span>
+  },
+  {
+    name        : <span class="hljs-string">&#x27;skipMilestones&#x27;</span>,
+    isBoolean   : <span class="hljs-literal">true</span>,
+    description : <span class="hljs-string">&#x27;If true, the milestone setup process is skipped.&#x27;</span>
+  }
+]
+
+<span class="hljs-keyword">export</span> { commonProjectSetupParameters }
+
+    </code></pre>
+  </body>
+</html>

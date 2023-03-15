@@ -1,0 +1,177 @@
+<html>
+  <head>
+    <title>document-lib.mjs</title>
+
+    <style>
+      body {
+        text-align: left;
+      }
+
+      pre {
+        text-align: left;
+        display: inline-block;
+        max-width: 120em;
+        margin: 1em 1em;
+        padding: 1em 1em;
+        border-top: solid blue 1px;
+        border-right: solid blue 1px;
+        border-bottom: solid blue 1px;
+        white-space: pre-wrap;
+      }
+    </style>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/base16/google-light.min.css">
+  </head>
+  <body>
+    <pre><code>
+<span class="hljs-keyword">import</span> * <span class="hljs-keyword">as</span> fs <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;node:fs/promises&#x27;</span>
+<span class="hljs-keyword">import</span> * <span class="hljs-keyword">as</span> fsPath <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;node:path&#x27;</span>
+
+<span class="hljs-keyword">import</span> hljs <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;highlight.js/lib/core&#x27;</span>
+<span class="hljs-keyword">import</span> javascript <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;highlight.js/lib/languages/javascript&#x27;</span>
+<span class="hljs-keyword">import</span> naturalSort <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;natural-sort&#x27;</span>
+
+<span class="hljs-keyword">import</span> { getFiles } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;./get-files&#x27;</span>
+<span class="hljs-keyword">import</span> { getPackageData } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;./get-package-data&#x27;</span>
+
+hljs.<span class="hljs-title function_">registerLanguage</span>(<span class="hljs-string">&#x27;javascript&#x27;</span>, javascript)
+
+
+<span class="hljs-keyword">const</span> <span class="hljs-title function_">doDocument</span> = <span class="hljs-keyword">async</span> (<span class="hljs-params">{ orgKey, localProjectName, req, res }</span>) =&gt; {
+  <span class="hljs-keyword">const</span> { ignoreDocumentationImplementation } = req.<span class="hljs-property">vars</span>
+
+  <span class="hljs-keyword">const</span> requireImplements = ignoreDocumentationImplementation === <span class="hljs-literal">true</span>
+    ? []
+    : [<span class="hljs-string">&#x27;implements:documentation&#x27;</span>]
+
+  <span class="hljs-keyword">const</span> pkgData = <span class="hljs-keyword">await</span> <span class="hljs-title function_">getPackageData</span>({ orgKey, localProjectName, requireImplements })
+  <span class="hljs-comment">// else, we are good to start generating documentation!</span>
+
+  <span class="hljs-keyword">const</span> { projectFQN, projectPath } = pkgData
+
+  <span class="hljs-keyword">const</span> pkgSrc = fsPath.<span class="hljs-title function_">join</span>(projectPath, <span class="hljs-string">&#x27;src&#x27;</span>)
+  <span class="hljs-keyword">const</span> docPath = fsPath.<span class="hljs-title function_">join</span>(projectPath, <span class="hljs-string">&#x27;docs&#x27;</span>)
+
+  <span class="hljs-keyword">const</span> pkgSrcLength = pkgSrc.<span class="hljs-property">length</span>
+  <span class="hljs-keyword">const</span> sourceFiles = <span class="hljs-keyword">await</span> <span class="hljs-title function_">getFiles</span>({ dir : pkgSrc, reName : <span class="hljs-string">&#x27;.(?:js|mjs)$&#x27;</span> })
+  <span class="hljs-keyword">const</span> dirs = {}
+
+  <span class="hljs-keyword">await</span> fs.<span class="hljs-title function_">rm</span>(docPath, { recursive : <span class="hljs-literal">true</span> })
+
+  <span class="hljs-keyword">const</span> tocFiles = []
+
+  <span class="hljs-keyword">await</span> <span class="hljs-title class_">Promise</span>.<span class="hljs-title function_">all</span>(sourceFiles.<span class="hljs-title function_">map</span>(<span class="hljs-title function_">async</span>(file) =&gt; {
+    <span class="hljs-keyword">const</span> fileContents = <span class="hljs-keyword">await</span> fs.<span class="hljs-title function_">readFile</span>(file, { encoding : <span class="hljs-string">&#x27;utf8&#x27;</span> })
+    <span class="hljs-keyword">const</span> pkgRelPath = file.<span class="hljs-title function_">slice</span>(pkgSrcLength)
+    <span class="hljs-keyword">const</span> pkgRelDoc = pkgRelPath + <span class="hljs-string">&#x27;.html&#x27;</span> <span class="hljs-comment">// so we end up with file names like &#x27;library.js.html&#x27;</span>
+    <span class="hljs-keyword">const</span> docFilePath = fsPath.<span class="hljs-title function_">join</span>(docPath, pkgRelDoc)
+    <span class="hljs-keyword">const</span> docDirPath = fsPath.<span class="hljs-title function_">dirname</span>(docFilePath)
+
+    tocFiles.<span class="hljs-title function_">push</span>(pkgRelDoc.<span class="hljs-title function_">slice</span>(<span class="hljs-number">1</span>)) <span class="hljs-comment">// removing leading &#x27;/&#x27;</span>
+
+    <span class="hljs-keyword">if</span> (dirs[docDirPath] === <span class="hljs-literal">undefined</span>) {
+      <span class="hljs-keyword">await</span> fs.<span class="hljs-title function_">mkdir</span>(docDirPath, { recursive : <span class="hljs-literal">true</span> })
+      dirs[docDirPath] = <span class="hljs-literal">true</span>
+    }
+
+    <span class="hljs-keyword">const</span> htmlifiedSource = <span class="hljs-title function_">htmlifySource</span>(fileContents, pkgRelPath)
+
+    <span class="hljs-keyword">return</span> fs.<span class="hljs-title function_">writeFile</span>(docFilePath, htmlifiedSource)
+  }))
+
+  tocFiles.<span class="hljs-title function_">sort</span>(naturalSort)
+
+  <span class="hljs-keyword">const</span> indexPath = fsPath.<span class="hljs-title function_">join</span>(docPath, <span class="hljs-string">&#x27;index.html&#x27;</span>)
+  <span class="hljs-keyword">let</span> tocContent = <span class="hljs-string">`&lt;html&gt;
+  &lt;head&gt;
+    &lt;title&gt;<span class="hljs-subst">${projectFQN}</span>&lt;/title&gt;
+  &lt;/head&gt;
+    &lt;body&gt;
+      &lt;ul&gt;`</span>
+  <span class="hljs-keyword">for</span> (<span class="hljs-keyword">const</span> tocFile <span class="hljs-keyword">of</span> tocFiles) {
+    tocContent += <span class="hljs-string">`
+        &lt;li&gt;
+          &lt;a href=<span class="hljs-subst">${tocFile}</span>&gt;<span class="hljs-subst">${tocFile.slice(<span class="hljs-number">0</span>, -<span class="hljs-number">5</span>)}</span>&lt;/a&gt;
+        &lt;/li&gt;`</span>
+  }
+  tocContent += <span class="hljs-string">`
+      &lt;/ul&gt;
+    &lt;/body&gt;
+  &lt;/html&gt;`</span>
+
+  <span class="hljs-keyword">await</span> fs.<span class="hljs-title function_">writeFile</span>(indexPath, tocContent)
+
+  res.<span class="hljs-title function_">setHeader</span>(<span class="hljs-string">&#x27;content-type&#x27;</span>, <span class="hljs-string">&#x27;text/terminal&#x27;</span>).<span class="hljs-title function_">send</span>(<span class="hljs-string">`Documented <span class="hljs-subst">${sourceFiles.length}</span> source files.`</span>)
+}
+
+<span class="hljs-keyword">const</span> extToType = {
+  js  : <span class="hljs-string">&#x27;javascript&#x27;</span>,
+  jsx : <span class="hljs-string">&#x27;javascript&#x27;</span>,
+  mjs : <span class="hljs-string">&#x27;javascript&#x27;</span>
+}
+
+<span class="hljs-keyword">const</span> <span class="hljs-title function_">htmlifySource</span> = (<span class="hljs-params">rawContent, pkgRelPath</span>) =&gt; {
+  <span class="hljs-keyword">const</span> fileExt = pkgRelPath.<span class="hljs-title function_">slice</span>(pkgRelPath.<span class="hljs-title function_">lastIndexOf</span>(<span class="hljs-string">&#x27;.&#x27;</span>) + <span class="hljs-number">1</span>)
+  <span class="hljs-keyword">const</span> fileType = extToType[fileExt] || fileExt
+  <span class="hljs-keyword">const</span> title = fsPath.<span class="hljs-title function_">basename</span>(pkgRelPath)
+
+  <span class="hljs-keyword">const</span> html = <span class="hljs-string">`&lt;html&gt;
+  &lt;head&gt;
+    &lt;title&gt;<span class="hljs-subst">${title}</span>&lt;/title&gt;
+
+    &lt;style&gt;
+      body {
+        text-align: left;
+      }
+
+      pre {
+        text-align: left;
+        display: inline-block;
+        max-width: 120em;
+        margin: 1em 1em;
+        padding: 1em 1em;
+        border-top: solid blue 1px;
+        border-right: solid blue 1px;
+        border-bottom: solid blue 1px;
+        white-space: pre-wrap;
+      }
+    &lt;/style&gt;
+
+    &lt;link rel=&quot;stylesheet&quot; href=&quot;https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/base16/google-light.min.css&quot;&gt;
+  &lt;/head&gt;
+  &lt;body&gt;
+    &lt;pre&gt;&lt;code&gt;
+<span class="hljs-subst">${hljs.highlight(rawContent, { language : fileType }).value}</span>
+    &lt;/code&gt;&lt;/pre&gt;
+  &lt;/body&gt;
+&lt;/html&gt;`</span>
+
+  <span class="hljs-keyword">return</span> html
+}
+
+<span class="hljs-keyword">const</span> <span class="hljs-title function_">getDocumentEndpointParameters</span> = (<span class="hljs-params">{ workDesc }</span>) =&gt; {
+  <span class="hljs-keyword">const</span> help = {
+    name        : <span class="hljs-string">`Project document (<span class="hljs-subst">${workDesc}</span>)`</span>,
+    summary     : <span class="hljs-string">`Generates developer documents for the <span class="hljs-subst">${workDesc}</span> project.`</span>,
+    description : <span class="hljs-string">`Locally generates developer documentation for the <span class="hljs-subst">${workDesc}</span> project.`</span>
+  }
+
+  <span class="hljs-keyword">const</span> method = <span class="hljs-string">&#x27;put&#x27;</span>
+
+  <span class="hljs-keyword">const</span> parameters = [
+    {
+      name        : <span class="hljs-string">&#x27;ignoreDocumentationImplementation&#x27;</span>,
+      isBoolean   : <span class="hljs-literal">true</span>,
+      description : <span class="hljs-string">&#x27;If set to true, then a missing &lt;code&gt;implementation:documentation&lt;rst&gt; label will not cause the process to exit.&#x27;</span>
+    }
+  ]
+  <span class="hljs-title class_">Object</span>.<span class="hljs-title function_">freeze</span>(parameters)
+
+  <span class="hljs-keyword">return</span> { help, method, parameters }
+}
+
+<span class="hljs-keyword">export</span> { doDocument, getDocumentEndpointParameters }
+
+    </code></pre>
+  </body>
+</html>

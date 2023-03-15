@@ -1,0 +1,66 @@
+<html>
+  <head>
+    <title>detail-lib.mjs</title>
+
+    <style>
+      body {
+        text-align: left;
+      }
+
+      pre {
+        text-align: left;
+        display: inline-block;
+        max-width: 120em;
+        margin: 1em 1em;
+        padding: 1em 1em;
+        border-top: solid blue 1px;
+        border-right: solid blue 1px;
+        border-bottom: solid blue 1px;
+        white-space: pre-wrap;
+      }
+    </style>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/base16/google-light.min.css">
+  </head>
+  <body>
+    <pre><code>
+<span class="hljs-comment">// <span class="hljs-doctag">TODO:</span> we should do more with this; expose liq-specific info. Right now, we&#x27;re duplicating playground/projects/get-package</span>
+<span class="hljs-keyword">import</span> createError <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;http-errors&#x27;</span>
+
+<span class="hljs-keyword">import</span> { httpSmartResponse } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;@liquid-labs/http-smart-response&#x27;</span>
+
+<span class="hljs-comment">/**
+ * Implements detailing a project. Used by the named and implied project detail endpoints.
+ */</span>
+<span class="hljs-keyword">const</span> <span class="hljs-title function_">doDetail</span> = (<span class="hljs-params">{ localProjectName, model, orgKey, req, res }</span>) =&gt; {
+  <span class="hljs-keyword">const</span> projectFQN = orgKey + <span class="hljs-string">&#x27;/&#x27;</span> + localProjectName
+
+  <span class="hljs-keyword">const</span> projectData = model.<span class="hljs-property">playground</span>.<span class="hljs-property">projects</span>[projectFQN]
+  <span class="hljs-keyword">if</span> (projectData === <span class="hljs-literal">undefined</span>) <span class="hljs-keyword">throw</span> createError.<span class="hljs-title class_">NotFound</span>(<span class="hljs-string">`No such project &#x27;<span class="hljs-subst">${projectFQN}</span>&#x27;.`</span>)
+
+  <span class="hljs-title function_">httpSmartResponse</span>({ data : projectData, msg : <span class="hljs-string">`Retrieved project &#x27;<span class="hljs-subst">${projectFQN}</span>&#x27;.`</span>, req, res })
+}
+
+<span class="hljs-comment">/**
+ * Defines parameters for named and implied project detail endpoints.
+ */</span>
+<span class="hljs-keyword">const</span> <span class="hljs-title function_">getDetailEndpointParameters</span> = (<span class="hljs-params">{ workDesc }</span>) =&gt; {
+  <span class="hljs-keyword">const</span> parameters = []
+  <span class="hljs-title class_">Object</span>.<span class="hljs-title function_">freeze</span>(parameters)
+
+  <span class="hljs-keyword">return</span> {
+    help : {
+      name        : <span class="hljs-string">`Project detail (<span class="hljs-subst">${workDesc}</span>)`</span>,
+      summary     : <span class="hljs-string">`Details the <span class="hljs-subst">${workDesc}</span> project.`</span>,
+      description : <span class="hljs-string">`Provides detailed information about the <span class="hljs-subst">${workDesc}</span> project.`</span>
+    },
+    method : <span class="hljs-string">&#x27;get&#x27;</span>,
+    parameters
+  }
+}
+
+<span class="hljs-keyword">export</span> { doDetail, getDetailEndpointParameters }
+
+    </code></pre>
+  </body>
+</html>

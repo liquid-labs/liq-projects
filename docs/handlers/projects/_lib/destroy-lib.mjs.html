@@ -1,0 +1,148 @@
+<html>
+  <head>
+    <title>destroy-lib.mjs</title>
+
+    <style>
+      body {
+        text-align: left;
+      }
+
+      pre {
+        text-align: left;
+        display: inline-block;
+        max-width: 120em;
+        margin: 1em 1em;
+        padding: 1em 1em;
+        border-top: solid blue 1px;
+        border-right: solid blue 1px;
+        border-bottom: solid blue 1px;
+        white-space: pre-wrap;
+      }
+    </style>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/base16/google-light.min.css">
+  </head>
+  <body>
+    <pre><code>
+<span class="hljs-keyword">import</span> * <span class="hljs-keyword">as</span> fs <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;node:fs/promises&#x27;</span>
+<span class="hljs-keyword">import</span> * <span class="hljs-keyword">as</span> fsPath <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;node:path&#x27;</span>
+<span class="hljs-keyword">import</span> * <span class="hljs-keyword">as</span> os <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;node:os&#x27;</span>
+
+<span class="hljs-keyword">import</span> createError <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;http-errors&#x27;</span>
+
+<span class="hljs-keyword">import</span> { checkGitHubAPIAccess } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;@liquid-labs/github-toolkit&#x27;</span>
+<span class="hljs-keyword">import</span> { httpSmartResponse } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;@liquid-labs/http-smart-response&#x27;</span>
+<span class="hljs-keyword">import</span> { <span class="hljs-title class_">CredentialsDB</span>, purposes } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;@liquid-labs/liq-credentials-db&#x27;</span>
+<span class="hljs-keyword">import</span> { <span class="hljs-title class_">Octocache</span> } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;@liquid-labs/octocache&#x27;</span>
+
+<span class="hljs-keyword">import</span> { commonProjectPathParameters } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;./common-project-path-parameters&#x27;</span>
+<span class="hljs-keyword">import</span> { getPackageData } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;./get-package-data&#x27;</span>
+
+<span class="hljs-comment">/**
+ * Implements verifying local status and destroying repositories on GitHub. Used by the named and implied project
+ * destroy endpoints.
+ */</span>
+<span class="hljs-keyword">const</span> <span class="hljs-title function_">doDestroy</span> = <span class="hljs-keyword">async</span>(<span class="hljs-params">{ app, cache, localProjectName, model, orgKey, reporter, req, res }</span>) =&gt; {
+  <span class="hljs-keyword">const</span> { confirmed = <span class="hljs-literal">false</span>, noCopy = <span class="hljs-literal">false</span> } = req.<span class="hljs-property">vars</span>
+
+  <span class="hljs-keyword">if</span> (confirmed !== <span class="hljs-literal">true</span>) {
+    <span class="hljs-keyword">throw</span> createError.<span class="hljs-title class_">BadRequest</span>(<span class="hljs-string">&quot;The &#x27;confirmed&#x27; option must be set true.&quot;</span>)
+  }
+
+  <span class="hljs-keyword">await</span> <span class="hljs-title function_">checkGitHubAPIAccess</span>() <span class="hljs-comment">// throws HTTP Error on failure</span>
+
+  <span class="hljs-keyword">let</span> projectPath = req.<span class="hljs-property">vars</span>.<span class="hljs-property">projectPath</span>
+
+  <span class="hljs-keyword">const</span> pkgData = <span class="hljs-keyword">await</span> <span class="hljs-title function_">getPackageData</span>({ orgKey, localProjectName, projectPath })
+
+  <span class="hljs-keyword">const</span> { githubOrg, projectBaseName, projectFQN } = pkgData
+  projectPath = pkgData.<span class="hljs-property">projectPath</span>
+
+  <span class="hljs-keyword">const</span> credDB = <span class="hljs-keyword">new</span> <span class="hljs-title class_">CredentialsDB</span>({ app, cache })
+  <span class="hljs-keyword">const</span> authToken = credDB.<span class="hljs-title function_">getToken</span>(purposes.<span class="hljs-property">GITHUB_API</span>)
+
+  <span class="hljs-keyword">const</span> octocache = <span class="hljs-keyword">new</span> <span class="hljs-title class_">Octocache</span>({ authToken })
+  <span class="hljs-keyword">try</span> { <span class="hljs-comment">// <span class="hljs-doctag">TODO:</span> move to github-toolkit as &#x27;deleteGitHubProject&#x27;</span>
+    reporter.<span class="hljs-title function_">push</span>(<span class="hljs-string">`About to &lt;em&gt;delete&lt;rst&gt; of &lt;code&gt;<span class="hljs-subst">${githubOrg}</span>/<span class="hljs-subst">${projectBaseName}</span>&lt;rst&gt;...`</span>)
+    <span class="hljs-keyword">await</span> octocache.<span class="hljs-title function_">request</span>(<span class="hljs-string">`DELETE /repos/<span class="hljs-subst">${githubOrg}</span>/<span class="hljs-subst">${projectBaseName}</span>`</span>)
+    reporter.<span class="hljs-title function_">push</span>(<span class="hljs-string">&#x27;  success.&#x27;</span>)
+  }
+  <span class="hljs-keyword">catch</span> (e) {
+    <span class="hljs-keyword">throw</span> createError.<span class="hljs-title class_">BadRequest</span>(<span class="hljs-string">`There was a problem removing &#x27;<span class="hljs-subst">${projectFQN}</span>&#x27; from github: <span class="hljs-subst">${e.message}</span>`</span>, { cause : e })
+  }
+
+  <span class="hljs-keyword">let</span> tmpDir
+  <span class="hljs-keyword">if</span> (noCopy !== <span class="hljs-literal">true</span>) {
+    <span class="hljs-keyword">const</span> tmpPrefix = fsPath.<span class="hljs-title function_">join</span>(os.<span class="hljs-title function_">tmpdir</span>(), orgKey + <span class="hljs-string">&#x27;-&#x27;</span> + localProjectName)
+    <span class="hljs-keyword">const</span> fsSep = fsPath.<span class="hljs-property">sep</span>
+    <span class="hljs-keyword">try</span> {
+      reporter.<span class="hljs-title function_">push</span>(<span class="hljs-string">`About to copy <span class="hljs-subst">${projectFQN}</span> to <span class="hljs-subst">${tmpDir}</span>...`</span>)
+      tmpDir = <span class="hljs-keyword">await</span> fs.<span class="hljs-title function_">mkdtemp</span>(tmpPrefix)
+      <span class="hljs-comment">// <span class="hljs-doctag">TODO:</span> why not just move? Then put the &#x27;rm&#x27; in an else.</span>
+      <span class="hljs-comment">// <span class="hljs-doctag">TODO:</span> filter out based on &#x27;.gitignore&#x27;?</span>
+      <span class="hljs-keyword">await</span> fs.<span class="hljs-title function_">cp</span>(projectPath, tmpDir, {
+        recursive : <span class="hljs-literal">true</span>,
+        filter    : <span class="hljs-function">(<span class="hljs-params">src</span>) =&gt;</span> !src.<span class="hljs-title function_">match</span>(<span class="hljs-keyword">new</span> <span class="hljs-title class_">RegExp</span>(<span class="hljs-string">`<span class="hljs-subst">${fsSep}</span>(?:.git|dist|node_modules)(?:<span class="hljs-subst">${fsSep}</span>|$)`</span>))
+      })
+      reporter.<span class="hljs-title function_">push</span>(<span class="hljs-string">&#x27;  success.&#x27;</span>)
+    }
+    <span class="hljs-keyword">catch</span> (e) {
+      <span class="hljs-keyword">throw</span> createError.<span class="hljs-title class_">InternalServerError</span>(<span class="hljs-string">`Project &#x27;<span class="hljs-subst">${projectFQN}</span>&#x27; was removed from GitHub, but there was an error copying the local repo to temp.`</span>, { cause : e })
+    }
+  }
+
+  <span class="hljs-keyword">try</span> {
+    reporter.<span class="hljs-title function_">push</span>(<span class="hljs-string">`About to &lt;em&gt;delete&lt;rst&gt; local copy of project &lt;code&gt;<span class="hljs-subst">${projectFQN}</span>&lt;rst&gt; from playground...`</span>)
+    <span class="hljs-keyword">await</span> fs.<span class="hljs-title function_">rm</span>(projectPath, { recursive : <span class="hljs-literal">true</span> })
+    reporter.<span class="hljs-title function_">push</span>(<span class="hljs-string">&#x27;  success.&#x27;</span>)
+  }
+  <span class="hljs-keyword">catch</span> (e) {
+    <span class="hljs-keyword">throw</span> createError.<span class="hljs-title class_">InternalServerError</span>(<span class="hljs-string">`Project &#x27;<span class="hljs-subst">${projectFQN}</span>&#x27; was removed from GitHub, but there was an error removing the local project at &#x27;<span class="hljs-subst">${projectPath}</span>&#x27;. Check and address manually.`</span>, { cause : e })
+  }
+
+  model.<span class="hljs-title function_">refreshModel</span>()
+
+  <span class="hljs-keyword">let</span> msg = reporter.<span class="hljs-property">taskReport</span>.<span class="hljs-title function_">join</span>(<span class="hljs-string">&#x27;\n&#x27;</span>)
+    + <span class="hljs-string">&#x27;\n\n&#x27;</span>
+    + <span class="hljs-string">`Removed &#x27;<span class="hljs-subst">${projectFQN}</span>&#x27; from GitHub and deleted project at &#x27;<span class="hljs-subst">${projectPath}</span>&#x27;.`</span>
+  <span class="hljs-keyword">if</span> (noCopy !== <span class="hljs-literal">true</span>) msg += <span class="hljs-string">`Project has been temporarily saved at <span class="hljs-subst">${tmpDir}</span>.`</span>
+
+  <span class="hljs-title function_">httpSmartResponse</span>({ msg, req, res })
+}
+
+<span class="hljs-comment">/**
+ * Defines parameters for named and implied project destroy endpoints.
+ */</span>
+<span class="hljs-keyword">const</span> <span class="hljs-title function_">getDestroyEndpointParameters</span> = (<span class="hljs-params">{ workDesc }</span>) =&gt; {
+  <span class="hljs-keyword">const</span> parameters = [
+    {
+      name        : <span class="hljs-string">&#x27;noCopy&#x27;</span>,
+      isBoolean   : <span class="hljs-literal">true</span>,
+      description : <span class="hljs-string">&#x27;Skips the default backup copy made to tmp.&#x27;</span>
+    },
+    {
+      name        : <span class="hljs-string">&#x27;confirmed&#x27;</span>,
+      isRequired  : <span class="hljs-literal">true</span>,
+      isBoolean   : <span class="hljs-literal">true</span>,
+      description : <span class="hljs-string">&#x27;In order to better prevent accidental destruction, the `confirmed` option must be specified or the process exits.&#x27;</span>
+    },
+    ...commonProjectPathParameters
+  ]
+  <span class="hljs-title class_">Object</span>.<span class="hljs-title function_">freeze</span>(parameters)
+
+  <span class="hljs-keyword">return</span> {
+    help : {
+      name        : <span class="hljs-string">`Work destroy (<span class="hljs-subst">${workDesc}</span>)`</span>,
+      summray     : <span class="hljs-string">`Deletes the <span class="hljs-subst">${workDesc}</span> project repository on GitHub and locally.`</span>,
+      description : <span class="hljs-string">`Attempts to delete the <span class="hljs-subst">${workDesc}</span> project repository on GitHub and delete the local copy as well. In order to better avoid accidental deletion, the \`confirmed\` parameter must be set to \`true\`. By default, a copy of the project is made in the system&#x27;s tmp directory unless \`noCopy\` is specified. `</span>
+    },
+    method : <span class="hljs-string">&#x27;delete&#x27;</span>,
+    parameters
+  }
+}
+
+<span class="hljs-keyword">export</span> { doDestroy, getDestroyEndpointParameters }
+
+    </code></pre>
+  </body>
+</html>
