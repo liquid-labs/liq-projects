@@ -2,22 +2,22 @@ import createError from 'http-errors'
 
 import { determineImpliedProject } from '@liquid-labs/liq-projects-lib'
 
-import { doArchive, getArchiveEndpointParameters } from './_lib/archive-lib'
+import { doDestroy, getDestroyEndpointParameters } from './_lib/destroy-lib'
 
-const { help, method, parameters } = getArchiveEndpointParameters({ workDesc : 'implied' })
+const path = ['projects', 'destroy']
 
-const path = ['projects', 'archive']
+const { help, method, parameters } = getDestroyEndpointParameters({ workDesc : 'implied' })
 
 const func = ({ app, cache, model, reporter }) => async(req, res) => {
   reporter = reporter.isolate()
 
   const cwd = req.get('X-CWD')
   if (cwd === undefined) {
-    throw createError.BadRequest("Called 'work submit' with implied work, but 'X-CWD' header not found.")
+    throw createError.BadRequest("Called 'work destroy' with implied work, but 'X-CWD' header not found.")
   }
   const [orgKey, localProjectName] = determineImpliedProject({ currDir : cwd }).split('/')
 
-  await doArchive({ app, cache, model, orgKey, localProjectName, reporter, res, req })
+  await doDestroy({ app, cache, localProjectName, model, orgKey, reporter, req, res })
 }
 
 export {

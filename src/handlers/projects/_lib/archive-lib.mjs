@@ -47,7 +47,7 @@ const doArchive = async({ app, cache, model, orgKey, localProjectName, reporter,
 
   if (keepLocal !== true) {
     try {
-      rporter.push(`About to <em>delete<rst> local project at <code>${projectPath}<rst>...`)
+      reporter.push(`About to <em>delete<rst> local project at <code>${projectPath}<rst>...`)
       await fs.rm(projectPath, { recursive : true })
       reporter.push('  success.')
     }
@@ -83,9 +83,9 @@ const getArchiveEndpointParameters = ({ workDesc }) => {
 
   return {
     help : {
-      name        : 'Project archive',
+      name        : `Project archive (${workDesc})`,
       summary     : `Archives the ${workDesc} project.`,
-      description : `Archives the repository associated with the ${workDesc} project on GitHub.`
+      description : `Archives the repository associated with the ${workDesc} project on GitHub and deletes the local project. Use \`keepLocal\` to retain the local project.`
     },
     method : 'put',
     parameters
