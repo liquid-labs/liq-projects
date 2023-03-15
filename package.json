@@ -42,7 +42,7 @@
     "natural-sort": "^1.0.0"
   },
   "dependencies": {
-    "@liquid-labs/github-toolkit": "^1.0.0-alpha.6",
+    "@liquid-labs/github-toolkit": "^1.0.0-alpha.7",
     "@liquid-labs/liq-credentials-db": "^1.0.0-alpha.3",
     "@liquid-labs/liq-projects-lib": "^1.0.0-alpha.3",
     "@liquid-labs/liq-qa-lib": "^1.0.0-alpha.1",
