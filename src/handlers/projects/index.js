@@ -10,6 +10,7 @@ import * as detailImpliedHandler from './detail-implied'
 import * as documentHandler from './document'
 import * as documentImpliedHandler from './document-implied'
 import * as renameHandler from './rename'
+import * as renameImpliedHandler from './rename-implied'
 import * as setupHandler from './setup'
 
 handlers.push(
@@ -23,6 +24,7 @@ handlers.push(
   documentHandler,
   documentImpliedHandler,
   renameHandler,
+  renameImpliedHandler,
   setupHandler
 )
 

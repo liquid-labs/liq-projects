@@ -10,8 +10,10 @@ import { getPackageData } from './get-package-data'
 
 hljs.registerLanguage('javascript', javascript)
 
-
-const doDocument = async ({ orgKey, localProjectName, req, res }) => {
+/**
+ * Implements documenting a project. Used by the named and implied project detail endpoints.
+ */
+const doDocument = async({ orgKey, localProjectName, req, res }) => {
   const { ignoreDocumentationImplementation } = req.vars
 
   const requireImplements = ignoreDocumentationImplementation === true
@@ -123,6 +125,9 @@ ${hljs.highlight(rawContent, { language : fileType }).value}
   return html
 }
 
+/**
+ * Provides common endpoint parameters for named and implied document endpoints.
+ */
 const getDocumentEndpointParameters = ({ workDesc }) => {
   const help = {
     name        : `Project document (${workDesc})`,

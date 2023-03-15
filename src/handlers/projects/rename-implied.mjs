@@ -2,11 +2,11 @@ import createError from 'http-errors'
 
 import { determineImpliedProject } from '@liquid-labs/liq-projects-lib'
 
-import { doDocument, getDocumentEndpointParameters } from './_lib/document-lib'
+import { doRename, getRenameEndpointParameters } from './_lib/rename-lib'
 
-const path = ['projects', 'document']
+const paths = ['projects', 'rename']
 
-const { help, method, parameters } = getDocumentEndpointParameters({ workDesc : 'named' })
+const { help, method, parameters } = getRenameEndpointParameters({ workDesc : 'named' })
 
 const func = ({ model, reporter }) => async(req, res) => {
   reporter = reporter.isolate()
@@ -17,7 +17,7 @@ const func = ({ model, reporter }) => async(req, res) => {
   }
   const [orgKey, localProjectName] = determineImpliedProject({ currDir : cwd }).split('/')
 
-  await doDocument({ orgKey, localProjectName, req, res })
+  await doRename({ orgKey, localProjectName, req, res })
 }
 
 export {
@@ -25,5 +25,5 @@ export {
   help,
   method,
   parameters,
-  path
+  paths
 }
