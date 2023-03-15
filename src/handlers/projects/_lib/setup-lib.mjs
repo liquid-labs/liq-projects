@@ -105,5 +105,4 @@ const getSetupEndpointParameters = ({ workDesc }) => {
   return { help, method, parameters }
 }
 
-
 export { doSetup, getSetupEndpointParameters }
