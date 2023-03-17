@@ -51,6 +51,21 @@ const func = ({ app, model, reporter }) => async(req, res) => {
 
   const { increment, orgKey, localProjectName, /* noBrowser, */ noPublish = false, otp } = req.vars
 
+  if (otp === undefined && app.liq.localSettings.NPM?.['otp-required'] === true) {
+    const interogationBundle = {
+      questions : [
+        { prompt : 'Provide your NPM OTP:', parameter : 'otp', handling : 'parameter' }
+      ]
+    }
+
+    res
+      .type('application/json')
+      .set('X-Question-and-Answer', 'true')
+      .send(interogationBundle)
+
+    return
+  }
+
   const pkgData = await getPackageData({ orgKey, localProjectName, projectPath : req.vars.projectPath })
 
   const { packageSpec, projectFQN, projectPath } = pkgData
