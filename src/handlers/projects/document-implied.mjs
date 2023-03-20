@@ -17,7 +17,7 @@ const func = ({ model, reporter }) => async(req, res) => {
   }
   const [orgKey, localProjectName] = determineImpliedProject({ currDir : cwd }).split('/')
 
-  await doDocument({ orgKey, localProjectName, req, res })
+  await doDocument({ model, orgKey, localProjectName, req, res })
 }
 
 export {

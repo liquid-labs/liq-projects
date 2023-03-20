@@ -13,14 +13,14 @@ hljs.registerLanguage('javascript', javascript)
 /**
  * Implements documenting a project. Used by the named and implied project detail endpoints.
  */
-const doDocument = async({ orgKey, localProjectName, req, res }) => {
+const doDocument = async({ model, orgKey, localProjectName, req, res }) => {
   const { ignoreDocumentationImplementation } = req.vars
 
   const requireImplements = ignoreDocumentationImplementation === true
     ? []
     : ['implements:documentation']
 
-  const pkgData = await getPackageData({ orgKey, localProjectName, requireImplements })
+  const pkgData = await getPackageData({ localProjectName, model, orgKey, requireImplements })
   // else, we are good to start generating documentation!
 
   const { projectFQN, projectPath } = pkgData

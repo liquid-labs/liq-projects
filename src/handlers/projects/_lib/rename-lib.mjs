@@ -63,7 +63,7 @@ const doRename = async({ localProjectName, model, orgKey, reporter, req, res }) 
   let origLocale = true
   try {
     reporter.push('Checking original project location...')
-    pkgData = await getPackageData({ orgKey, localProjectName, projectPath : req.vars.projectPath })
+    pkgData = await getPackageData({ localProjectName, model, orgKey })
     reporter.push('  Found.')
   }
   catch (e) {
@@ -87,7 +87,9 @@ const doRename = async({ localProjectName, model, orgKey, reporter, req, res }) 
     // then we definietly found a package definition in the new place.
   }
 
-  let { githubOrg, packageSpec, projectFQN, projectPath } = pkgData
+  // user may overrid the standard path v but usually won't
+  let projectPath = req.vars.projectPath || pkgData.projectPath
+  const { githubOrg, packageSpec, projectFQN } = pkgData
 
   if (noRenameDir === true) reporter.push('Skipping dir rename per <code>noRenameDir<rst>.')
   else if (origLocale === false) reporter.push('Looks like dir ha already been renamed; skipping.')

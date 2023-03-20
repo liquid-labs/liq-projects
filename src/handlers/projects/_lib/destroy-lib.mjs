@@ -25,12 +25,11 @@ const doDestroy = async({ app, cache, localProjectName, model, orgKey, reporter,
 
   await checkGitHubAPIAccess() // throws HTTP Error on failure
 
-  let projectPath = req.vars.projectPath
-
-  const pkgData = await getPackageData({ orgKey, localProjectName, projectPath })
+  const pkgData = await getPackageData({ localProjectName, model, orgKey })
 
   const { githubOrg, projectBaseName, projectFQN } = pkgData
-  projectPath = pkgData.projectPath
+  // user may overrid the standard path v but usually won't
+  const projectPath = req.vars.projectPath || pkgData.projectPath
 
   const credDB = new CredentialsDB({ app, cache })
   const authToken = credDB.getToken(purposes.GITHUB_API)

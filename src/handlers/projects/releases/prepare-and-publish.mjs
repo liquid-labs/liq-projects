@@ -66,7 +66,7 @@ const func = ({ app, model, reporter }) => async(req, res) => {
     return
   }
 
-  const pkgData = await getPackageData({ orgKey, localProjectName, projectPath : req.vars.projectPath })
+  const pkgData = await getPackageData({ localProjectName, model, orgKey })
 
   const { packageSpec, projectFQN, projectPath } = pkgData
   const [originRemote, mainBranch] = determineOriginAndMain({ projectPath, reporter })
