@@ -20,12 +20,11 @@ const doArchive = async({ app, cache, model, orgKey, localProjectName, reporter,
 
   const { keepLocal = false } = req.vars
 
-  let projectPath = req.vars.projectPath // may be undefined; that's OK; getPackageData will infer the default location
-
-  const pkgData = await getPackageData({ orgKey, localProjectName, projectPath })
+  const pkgData = await getPackageData({ localProjectName, model, orgKey })
 
   const { githubOrg, projectBaseName, projectFQN } = pkgData
-  projectPath = pkgData.projectPath
+  // user may overrid the standard path v but usually won't
+  const projectPath = req.vars.projectPath || pkgData.projectPath
 
   verifyMainBranchUpToDate({ reporter, ...pkgData })
   verifyClean({ reporter, ...pkgData })

@@ -12,7 +12,7 @@ const func = ({ model, reporter }) => async(req, res) => {
 
   const { localProjectName, orgKey } = req.vars
 
-  await doDocument({ orgKey, localProjectName, req, res })
+  await doDocument({ model, orgKey, localProjectName, req, res })
 }
 
 export {

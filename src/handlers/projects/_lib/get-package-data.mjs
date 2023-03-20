@@ -1,5 +1,3 @@
-import { existsSync } from 'node:fs'
-import * as fs from 'node:fs/promises'
 import * as fsPath from 'node:path'
 
 import createError from 'http-errors'
@@ -9,11 +7,10 @@ import createError from 'http-errors'
  *
  * #### Parameters
  *
- * - `localProjectName`: the local project base name within the org directory of the liq playground.
- * - `orgKey`: the liq org key, corresponding to a local playground presence.
- * - `projectPath`: where to look for the `package.json` file. You must provide either this parameter or both `orgKey`
- *    and `localProjectName`.`
- * - `requireImplements`: if set, then will investigation the `.liq.tags` in `package.json` for the required
+ * - `localProjectName`: (req) the local project base name within the org directory of the liq playground.
+ * - `model`: (req) the liq state model
+ * - `orgKey`: (req) the liq org key, corresponding to a local playground presence.
+ * - `requireImplements`: (opt) if set, then will investigation the `.liq.tags` in `package.json` for the required
  *   implementation tags.
  *
  * #### Returns
@@ -23,29 +20,21 @@ import createError from 'http-errors'
  * - `projectBaseName`: the github project name as extracted from the `package.json` `.name` field.
  * - `packageSpec`: the `package.json` data
  * - `projectFQN`: the fully qualified project name as extracted from the `package.json` `.name` field.
- * - `projectPath`: a reflection if passed in or, if not, constructed from the default location
+ * - 'projectPath': the inferred/standard project path; user should ignore if the project path is explicitly overriden
  */
-const getPackageData = async({ orgKey, localProjectName, projectPath, requireImplements }) => {
+const getPackageData = async({ localProjectName, model, orgKey, requireImplements }) => {
+  const projectFQN = orgKey + '/' + localProjectName
+  console.log(model.playground.projects) // DEBUG
+  const packageSpec = model.playground.projects[projectFQN]?.packageJSON
+  if (packageSpec === undefined) {
+    throw createError.NotFound(`No such project '${projectFQN}' found in state model.`)
+  }
+
   const liqPlayground = fsPath.join(process.env.LIQ_HOME || fsPath.join(process.env.HOME, '.liq'), 'playground')
-  projectPath = projectPath || fsPath.join(liqPlayground, orgKey, localProjectName)
-  const projectPkgPath = fsPath.join(projectPath, 'package.json')
-
-  if (!existsSync(projectPkgPath)) {
-    throw createError.NotFound(`Could not locate local package file for project <code>${localProjectName}<rst>. Perhaps the project needs to be imported.`)
-  }
+  const projectPath = fsPath.join(liqPlayground, orgKey, localProjectName)
   // else we have what looks like a project
-  let packageSpec
-  try {
-    const packageContents = await fs.readFile(projectPkgPath)
-    packageSpec = JSON.parse(packageContents)
-  }
-  catch (e) {
-    throw createError.BadRequest(`Could not process package definition. Ensure local project <code>${localProjectName}<rst> checkout contains a valid <code>package.json<rst> file. (${e.message})`)
-  }
 
-  let projectFQN = packageSpec.name
-  if (projectFQN.startsWith('@')) projectFQN = projectFQN.slice(1)
-  const [githubOrg, projectBaseName] = projectFQN.split('/')
+  const githubOrg = model.orgs[orgKey].getSetting('core.github.ORG_NAME')
 
   for (const reqImpl of requireImplements || []) {
     const isImplemented = packageSpec?.liq?.tags?.includes(reqImpl)
@@ -56,7 +45,7 @@ const getPackageData = async({ orgKey, localProjectName, projectPath, requireImp
 
   return {
     githubOrg,
-    projectBaseName,
+    projectBaseName : localProjectName, // TODO: does anyone use this? The caller already knows it...
     packageSpec,
     projectFQN,
     projectPath
