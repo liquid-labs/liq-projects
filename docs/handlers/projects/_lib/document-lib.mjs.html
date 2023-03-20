@@ -36,15 +36,17 @@
 
 hljs.<span class="hljs-title function_">registerLanguage</span>(<span class="hljs-string">&#x27;javascript&#x27;</span>, javascript)
 
-
-<span class="hljs-keyword">const</span> <span class="hljs-title function_">doDocument</span> = <span class="hljs-keyword">async</span> (<span class="hljs-params">{ orgKey, localProjectName, req, res }</span>) =&gt; {
+<span class="hljs-comment">/**
+ * Implements documenting a project. Used by the named and implied project detail endpoints.
+ */</span>
+<span class="hljs-keyword">const</span> <span class="hljs-title function_">doDocument</span> = <span class="hljs-keyword">async</span>(<span class="hljs-params">{ model, orgKey, localProjectName, req, res }</span>) =&gt; {
   <span class="hljs-keyword">const</span> { ignoreDocumentationImplementation } = req.<span class="hljs-property">vars</span>
 
   <span class="hljs-keyword">const</span> requireImplements = ignoreDocumentationImplementation === <span class="hljs-literal">true</span>
     ? []
     : [<span class="hljs-string">&#x27;implements:documentation&#x27;</span>]
 
-  <span class="hljs-keyword">const</span> pkgData = <span class="hljs-keyword">await</span> <span class="hljs-title function_">getPackageData</span>({ orgKey, localProjectName, requireImplements })
+  <span class="hljs-keyword">const</span> pkgData = <span class="hljs-keyword">await</span> <span class="hljs-title function_">getPackageData</span>({ localProjectName, model, orgKey, requireImplements })
   <span class="hljs-comment">// else, we are good to start generating documentation!</span>
 
   <span class="hljs-keyword">const</span> { projectFQN, projectPath } = pkgData
@@ -149,6 +151,9 @@ hljs.<span class="hljs-title function_">registerLanguage</span>(<span class="hlj
   <span class="hljs-keyword">return</span> html
 }
 
+<span class="hljs-comment">/**
+ * Provides common endpoint parameters for named and implied document endpoints.
+ */</span>
 <span class="hljs-keyword">const</span> <span class="hljs-title function_">getDocumentEndpointParameters</span> = (<span class="hljs-params">{ workDesc }</span>) =&gt; {
   <span class="hljs-keyword">const</span> help = {
     name        : <span class="hljs-string">`Project document (<span class="hljs-subst">${workDesc}</span>)`</span>,

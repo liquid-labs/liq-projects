@@ -30,9 +30,9 @@
 
 <span class="hljs-keyword">import</span> { doDocument, getDocumentEndpointParameters } <span class="hljs-keyword">from</span> <span class="hljs-string">&#x27;./_lib/document-lib&#x27;</span>
 
-<span class="hljs-keyword">const</span> path = [ <span class="hljs-string">&#x27;projects&#x27;</span>, <span class="hljs-string">&#x27;document&#x27;</span> ]
+<span class="hljs-keyword">const</span> path = [<span class="hljs-string">&#x27;projects&#x27;</span>, <span class="hljs-string">&#x27;document&#x27;</span>]
 
-<span class="hljs-keyword">const</span> { help, method, parameters } = <span class="hljs-title function_">getDocumentEndpointParameters</span>({ workDesc : <span class="hljs-string">&#x27;named&#x27;</span> })
+<span class="hljs-keyword">const</span> { help, method, parameters } = <span class="hljs-title function_">getDocumentEndpointParameters</span>({ workDesc : <span class="hljs-string">&#x27;implied&#x27;</span> })
 
 <span class="hljs-keyword">const</span> <span class="hljs-title function_">func</span> = (<span class="hljs-params">{ model, reporter }</span>) =&gt; <span class="hljs-title function_">async</span>(req, res) =&gt; {
   reporter = reporter.<span class="hljs-title function_">isolate</span>()
@@ -43,7 +43,7 @@
   }
   <span class="hljs-keyword">const</span> [orgKey, localProjectName] = <span class="hljs-title function_">determineImpliedProject</span>({ currDir : cwd }).<span class="hljs-title function_">split</span>(<span class="hljs-string">&#x27;/&#x27;</span>)
 
-  <span class="hljs-keyword">await</span> <span class="hljs-title function_">doDocument</span>({ orgKey, localProjectName, req, res })
+  <span class="hljs-keyword">await</span> <span class="hljs-title function_">doDocument</span>({ model, orgKey, localProjectName, req, res })
 }
 
 <span class="hljs-keyword">export</span> {

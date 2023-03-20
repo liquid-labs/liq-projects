@@ -77,7 +77,22 @@ parameters.<span class="hljs-title function_">sort</span>(<span class="hljs-func
 
   <span class="hljs-keyword">const</span> { increment, orgKey, localProjectName, <span class="hljs-comment">/* noBrowser, */</span> noPublish = <span class="hljs-literal">false</span>, otp } = req.<span class="hljs-property">vars</span>
 
-  <span class="hljs-keyword">const</span> pkgData = <span class="hljs-keyword">await</span> <span class="hljs-title function_">getPackageData</span>({ orgKey, localProjectName, projectPath : req.<span class="hljs-property">vars</span>.<span class="hljs-property">projectPath</span> })
+  <span class="hljs-keyword">if</span> (otp === <span class="hljs-literal">undefined</span> &amp;&amp; app.<span class="hljs-property">liq</span>.<span class="hljs-property">localSettings</span>.<span class="hljs-property">NPM</span>?.[<span class="hljs-string">&#x27;otp-required&#x27;</span>] === <span class="hljs-literal">true</span>) {
+    <span class="hljs-keyword">const</span> interogationBundle = {
+      questions : [
+        { prompt : <span class="hljs-string">&#x27;Provide your NPM OTP:&#x27;</span>, parameter : <span class="hljs-string">&#x27;otp&#x27;</span>, handling : <span class="hljs-string">&#x27;parameter&#x27;</span> }
+      ]
+    }
+
+    res
+      .<span class="hljs-title function_">type</span>(<span class="hljs-string">&#x27;application/json&#x27;</span>)
+      .<span class="hljs-title function_">set</span>(<span class="hljs-string">&#x27;X-Question-and-Answer&#x27;</span>, <span class="hljs-string">&#x27;true&#x27;</span>)
+      .<span class="hljs-title function_">send</span>(interogationBundle)
+
+    <span class="hljs-keyword">return</span>
+  }
+
+  <span class="hljs-keyword">const</span> pkgData = <span class="hljs-keyword">await</span> <span class="hljs-title function_">getPackageData</span>({ localProjectName, model, orgKey })
 
   <span class="hljs-keyword">const</span> { packageSpec, projectFQN, projectPath } = pkgData
   <span class="hljs-keyword">const</span> [originRemote, mainBranch] = <span class="hljs-title function_">determineOriginAndMain</span>({ projectPath, reporter })

@@ -46,12 +46,11 @@
 
   <span class="hljs-keyword">const</span> { keepLocal = <span class="hljs-literal">false</span> } = req.<span class="hljs-property">vars</span>
 
-  <span class="hljs-keyword">let</span> projectPath = req.<span class="hljs-property">vars</span>.<span class="hljs-property">projectPath</span> <span class="hljs-comment">// may be undefined; that&#x27;s OK; getPackageData will infer the default location</span>
-
-  <span class="hljs-keyword">const</span> pkgData = <span class="hljs-keyword">await</span> <span class="hljs-title function_">getPackageData</span>({ orgKey, localProjectName, projectPath })
+  <span class="hljs-keyword">const</span> pkgData = <span class="hljs-keyword">await</span> <span class="hljs-title function_">getPackageData</span>({ localProjectName, model, orgKey })
 
   <span class="hljs-keyword">const</span> { githubOrg, projectBaseName, projectFQN } = pkgData
-  projectPath = pkgData.<span class="hljs-property">projectPath</span>
+  <span class="hljs-comment">// user may overrid the standard path v but usually won&#x27;t</span>
+  <span class="hljs-keyword">const</span> projectPath = req.<span class="hljs-property">vars</span>.<span class="hljs-property">projectPath</span> || pkgData.<span class="hljs-property">projectPath</span>
 
   <span class="hljs-title function_">verifyMainBranchUpToDate</span>({ reporter, ...pkgData })
   <span class="hljs-title function_">verifyClean</span>({ reporter, ...pkgData })

@@ -51,12 +51,11 @@
 
   <span class="hljs-keyword">await</span> <span class="hljs-title function_">checkGitHubAPIAccess</span>() <span class="hljs-comment">// throws HTTP Error on failure</span>
 
-  <span class="hljs-keyword">let</span> projectPath = req.<span class="hljs-property">vars</span>.<span class="hljs-property">projectPath</span>
-
-  <span class="hljs-keyword">const</span> pkgData = <span class="hljs-keyword">await</span> <span class="hljs-title function_">getPackageData</span>({ orgKey, localProjectName, projectPath })
+  <span class="hljs-keyword">const</span> pkgData = <span class="hljs-keyword">await</span> <span class="hljs-title function_">getPackageData</span>({ localProjectName, model, orgKey })
 
   <span class="hljs-keyword">const</span> { githubOrg, projectBaseName, projectFQN } = pkgData
-  projectPath = pkgData.<span class="hljs-property">projectPath</span>
+  <span class="hljs-comment">// user may overrid the standard path v but usually won&#x27;t</span>
+  <span class="hljs-keyword">const</span> projectPath = req.<span class="hljs-property">vars</span>.<span class="hljs-property">projectPath</span> || pkgData.<span class="hljs-property">projectPath</span>
 
   <span class="hljs-keyword">const</span> credDB = <span class="hljs-keyword">new</span> <span class="hljs-title class_">CredentialsDB</span>({ app, cache })
   <span class="hljs-keyword">const</span> authToken = credDB.<span class="hljs-title function_">getToken</span>(purposes.<span class="hljs-property">GITHUB_API</span>)
