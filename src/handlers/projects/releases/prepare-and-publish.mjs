@@ -54,7 +54,7 @@ const func = ({ app, model, reporter }) => async(req, res) => {
   if (otp === undefined && app.liq.localSettings.NPM?.['otp-required'] === true) {
     const interrogationBundle = [
       {
-        title: 'One-time-password security verification',
+        title     : 'One-time-password security verification',
         questions : [
           { prompt : 'Provide your <em>NPM OTP<rst>:', parameter : 'otp', handling : 'parameter' }
         ]
