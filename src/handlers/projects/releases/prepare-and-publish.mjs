@@ -52,16 +52,19 @@ const func = ({ app, model, reporter }) => async(req, res) => {
   const { increment, orgKey, localProjectName, /* noBrowser, */ noPublish = false, otp } = req.vars
 
   if (otp === undefined && app.liq.localSettings.NPM?.['otp-required'] === true) {
-    const interogationBundle = {
-      questions : [
-        { prompt : 'Provide your NPM OTP:', parameter : 'otp', handling : 'parameter' }
-      ]
-    }
+    const interrogationBundle = [
+      {
+        title     : 'One-time-password security verification',
+        questions : [
+          { prompt : 'Provide your <em>NPM OTP<rst>:', parameter : 'otp', handling : 'parameter' }
+        ]
+      }
+    ]
 
     res
       .type('application/json')
       .set('X-Question-and-Answer', 'true')
-      .send(interogationBundle)
+      .send(interrogationBundle)
 
     return
   }
