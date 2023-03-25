@@ -1,5 +1,6 @@
-import * as prepareAndPublishHandler from './prepare-and-publish'
+import * as publishHandler from './publish'
+import * as publishImpliedHandler from './publish-implied'
 
-const handlers = [prepareAndPublishHandler]
+const handlers = [publishHandler, publishImpliedHandler]
 
 export { handlers }
