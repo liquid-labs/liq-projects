@@ -111,7 +111,7 @@ const func = ({ app, model, reporter }) => async(req, res) => {
 
   // npm version will tag and commit
   if (currVer !== nextVer) {
-    const doCommit = saveQAFiles({
+    const doCommit = await saveQAFiles({
       commitMsg : `Saving QA files for release ${releaseTag}.`,
       projectPath,
       reporter
