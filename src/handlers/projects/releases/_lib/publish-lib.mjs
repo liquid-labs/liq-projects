@@ -152,6 +152,8 @@ const doPublish = async({ app, localProjectName, model, orgKey, reporter, req, r
   }
   */
 
+  model.refreshModel()
+
   const msg = reporter.taskReport.join('\n\n')
     + (publish !== undefined || publishOnPrepare !== undefined
       ? `<bold>Published<rst> project <em>${projectFQN}<rst>.`
