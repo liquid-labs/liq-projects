@@ -107,11 +107,11 @@ const doPublish = async({ app, localProjectName, model, orgKey, reporter, req, r
   // npm version will tag and commit
   if (currVer !== nextVer) {
     try {
-      (await saveQAFiles({
+      await saveQAFiles({
         commitMsg : `Saving QA files for release ${releaseTag}.`,
         projectPath,
         reporter
-      })).length > 0
+      })
 
       reporter.push('Updating package version...')
       const versionResult = tryExec(`cd '${projectPath}' && npm version ${nextVer}`, { noThrow : true })
