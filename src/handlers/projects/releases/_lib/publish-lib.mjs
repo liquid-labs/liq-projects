@@ -114,10 +114,9 @@ const doPublish = async({ app, localProjectName, model, orgKey, reporter, req, r
       })).length > 0
 
       reporter.push('Updating package version...')
-      const versionResult = tryExec(`cd '${projectPath}' && npm version ${nextVer}`, { noThrow: true })
+      const versionResult = tryExec(`cd '${projectPath}' && npm version ${nextVer}`, { noThrow : true })
 
       if (versionResult.code !== 0) { throw createError.InternalServerError(`'npm version ${nextVer}' failed; address or update manually; stderr: ${versionResult.stderr}`) }
-
     }
     finally {
       await cleanupQAFiles({ projectPath, reporter })
