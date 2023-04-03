@@ -99,6 +99,7 @@ const doPublish = async({ app, localProjectName, model, orgKey, reporter, req, r
   // else, we are on the release branch, as checked by 'verifyReadyForRelease'
   // TODO: generate changelog once 'work' history is defined
 
+  reporter.push('Building project...')
   const buildResult = tryExec(`cd '${projectPath}' && npm run build`)
   if (buildResult.code !== 0) throw createError.BadRequest('Could not build project for release.')
 
@@ -113,10 +114,11 @@ const doPublish = async({ app, localProjectName, model, orgKey, reporter, req, r
         reporter
       })
 
-      reporter.push('Updating package version...')
+      reporter.push(`Updating package version from '${currVer}' to '${nextVer}'...`)
       const versionResult = tryExec(`cd '${projectPath}' && npm version ${nextVer}`, { noThrow : true })
 
       if (versionResult.code !== 0) { throw createError.InternalServerError(`'npm version ${nextVer}' failed; address or update manually; stderr: ${versionResult.stderr}`) }
+      else { reporter.push('  success!') }
     }
     finally {
       await cleanupQAFiles({ projectPath, reporter })
