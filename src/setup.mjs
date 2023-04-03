@@ -14,23 +14,23 @@ const setup = ({ app, model, reporter }) => {
 */
 const installProjectPlugins = ({ app, model, reporter }) => {
   const pluginPkg = path.join(process.env.HOME, '.liq', 'plugins', 'liq-projects', 'package.json')
-  if (fs.statSync(pluginPkg, { throwIfNoEntry: false }) === undefined) {
+  if (fs.statSync(pluginPkg, { throwIfNoEntry : false }) === undefined) {
     reporter.log(`No plugin entries (${path.dirname(pluginPkg)})...`)
     return
   }
-  
+
   const pluginDir = path.join(process.env.HOME, '.liq', 'plugins', 'liq-projects', 'node_modules')
   reporter.log(`Searching for audit plugins (in ${path.dirname(pluginDir)})...`)
   const pluginOptions = {
-    pkg: pluginPkg,
-    dir: pluginDir,
-    filter: () => true
+    pkg    : pluginPkg,
+    dir    : pluginDir,
+    filter : () => true
   }
-  
+
   const plugins = findPlugins(pluginOptions)
-  
+
   reporter.log(plugins.length === 0 ? 'No plugins found.' : `Found ${plugins.length} plugins.`)
-  
+
   model.projects.creationTypes = {}
   model.projects.setupFunctions = {}
   for (const plugin of plugins) {
@@ -57,6 +57,5 @@ const setupPathResolvers = ({ app, model }) => {
     }
   }
 }
-
 
 export { setup }
