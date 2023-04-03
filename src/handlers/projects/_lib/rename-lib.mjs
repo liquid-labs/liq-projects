@@ -104,7 +104,7 @@ const doRename = async({ localProjectName, model, orgKey, reporter, req, res }) 
 
   if (noRenameGitHubProject === true) { reporter.push('Skipping GitHub project rename per <code>noRenameGitHubProject<rst>.') }
   else {
-    const projCheckResult = 
+    const projCheckResult =
       shell.exec(`gh api -H "Accept: application/vnd.github+json" /repos/${githubOrg}/${newBaseName}`)
     if (projCheckResult.code === 0) { reporter.push(`It appears '${githubOrg}/${localProjectName}' is already renamed in GitHub to '${newBaseName}'.`) }
     else {
