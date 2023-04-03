@@ -4,7 +4,8 @@ import * as fsPath from 'node:path'
 import createError from 'http-errors'
 import shell from 'shelljs'
 
-import { checkGitHubAPIAccess, determineOriginAndMain } from '@liquid-labs/github-toolkit'
+import { determineOriginAndMain } from '@liquid-labs/git-toolkit'
+import { checkGitHubAPIAccess } from '@liquid-labs/github-toolkit'
 import { httpSmartResponse } from '@liquid-labs/http-smart-response'
 
 import { commonProjectPathParameters } from './common-project-path-parameters'
@@ -103,17 +104,17 @@ const doRename = async({ localProjectName, model, orgKey, reporter, req, res }) 
 
   if (noRenameGitHubProject === true) { reporter.push('Skipping GitHub project rename per <code>noRenameGitHubProject<rst>.') }
   else {
-    const projCheckResult =
+    const projCheckResult = 
       shell.exec(`gh api -H "Accept: application/vnd.github+json" /repos/${githubOrg}/${newBaseName}`)
     if (projCheckResult.code === 0) { reporter.push(`It appears '${githubOrg}/${localProjectName}' is already renamed in GitHub to '${newBaseName}'.`) }
     else {
       reporter.push(`Updating GitHub project name from ${localProjectName} to ${newBaseName}...`)
       const renameResult = shell.exec(`hub api --method PATCH -H "Accept: application/vnd.github+json" /repos/${projectFQN} -f name='${newBaseName}'`)
-      if (renameResult.code !== 0) { throw new Error('There was a problem renamin the remote project name. Update manually.') }
+      if (renameResult.code !== 0) { throw new Error('There was a problem renaming the remote project name. Update manually.') }
     }
   }
 
-  const [originRemote] = determineOriginAndMain({ path : projectPath })
+  const [originRemote] = determineOriginAndMain({ projectPath : projectPath })
   const newURL = `git@github.com:${githubOrg}/${newBaseName}.git`
   reporter.push(`Updating origin remote URL to ${newURL}...`)
   const urlResult = shell.exec(`cd ${projectPath} && git remote set-url ${originRemote} ${newURL}`)
@@ -128,7 +129,9 @@ const doRename = async({ localProjectName, model, orgKey, reporter, req, res }) 
   }
   packageSpec.bugs.url = packageSpec.bugs.url.replace(new RegExp(localProjectName + '/issues'), newBaseName + '/issues')
   packageSpec.homepage = packageSpec.homepage.replace(new RegExp(localProjectName + '#readme'), newBaseName + '#readme')
-  packageSpec.main = packageSpec.main.replace(new RegExp(localProjectName + '.js'), newBaseName + '.js')
+  if (packageSpec.main !== undefined) {
+    packageSpec.main = packageSpec.main.replace(new RegExp(localProjectName + '.js'), newBaseName + '.js')
+  }
   const pkgPath = fsPath.join(projectPath, 'package.json')
   reporter.push(`Updating <code>${pkgPath}<rst> with new project name '${newFQN}`)
   await fs.writeFile(pkgPath, JSON.stringify(packageSpec, null, '  '))
