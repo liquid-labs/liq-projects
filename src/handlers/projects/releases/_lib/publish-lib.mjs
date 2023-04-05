@@ -52,10 +52,10 @@ const doPublish = async({ app, localProjectName, model, orgKey, reporter, req, r
 
   // TODO: should be 'org.getSettings(`npm.${npmOrg}.OTP_REQUIRED`)' or similar.
   if (otp === undefined && app.liq.localSettings.NPM?.['otp-required'] === true) {
-    const interrogationBundle = [
+    const interrogationBundles = [
       {
-        title     : 'One-time-password security verification',
-        questions : [
+        title   : 'One-time-password security verification',
+        actions : [
           { prompt : 'Provide your <em>NPM OTP<rst>:', parameter : 'otp', handling : 'parameter' }
         ]
       }
@@ -64,7 +64,7 @@ const doPublish = async({ app, localProjectName, model, orgKey, reporter, req, r
     res
       .type('application/json')
       .set('X-Question-and-Answer', 'true')
-      .send(interrogationBundle)
+      .send(interrogationBundles)
 
     return
   }

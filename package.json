@@ -46,6 +46,7 @@
     "@liquid-labs/liq-projects-lib": "^1.0.0-alpha.4",
     "@liquid-labs/liq-qa-lib": "^1.0.0-alpha.7",
     "@liquid-labs/octocache": "^1.0.0-alpha.3",
+    "@liquid-labs/question-and-answer": "^1.0.0-alpha.8",
     "@liquid-labs/versioning": "^1.0.0-alpha.5",
     "find-plugins": "^1.1.7",
     "http-errors": "^2.0.0",
