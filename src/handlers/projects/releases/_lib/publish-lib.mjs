@@ -31,7 +31,7 @@ const doPublish = async({ app, localProjectName, model, orgKey, reporter, req, r
   reporter.reset()
   reporter = reporter.isolate()
 
-  const { increment, /* noBrowser, */ noPublish = false, otp, publish } = req.vars
+  const { dirtyOK, increment, /* noBrowser, */ noPublish = false, otp, publish } = req.vars
 
   const org = model.orgs[orgKey]
 
@@ -84,6 +84,7 @@ const doPublish = async({ app, localProjectName, model, orgKey, reporter, req, r
 
   verifyReadyForRelease({
     currentBranch,
+    dirtyOK,
     mainBranch,
     originRemote,
     packageSpec,
@@ -175,6 +176,12 @@ const getPublishEndpointParams = ({ workDesc }) => {
 
   const parameters = [
     {
+      name        : 'dirtyOK',
+      isBoolean   : true,
+      summary     : 'Skips checking if the branch is clean.',
+      description : 'Skips the branch clean check, allowing for the presence of uncommitted changes/files'
+    },
+    {
       name           : 'increment',
       description    : 'Indicates how to increment the version for this release.',
       matcher        : /^(?:major|minor|patch|premajor|preminor|prepatch|prerelease|pretype)$/,
@@ -219,6 +226,7 @@ const getPublishEndpointParams = ({ workDesc }) => {
  */
 const verifyReadyForRelease = ({
   currentBranch,
+  dirtyOK,
   mainBranch,
   originRemote,
   packageSpec,
@@ -231,7 +239,9 @@ const verifyReadyForRelease = ({
   if (currentBranch === releaseBranch) reporter.push(`  already on release branch ${releaseBranch}.`)
   else if (currentBranch !== mainBranch) { throw createError.BadRequest(`Release branch can only be cut from main branch '${mainBranch}'; current branch: '${currentBranch}'.`) }
 
-  verifyClean({ projectPath, reporter })
+  if (dirtyOK !== true) {
+    verifyClean({ projectPath, reporter })
+  }
   verifyMainBranchUpToDate({ projectPath, reporter })
   runQA({
     msgFail     : 'Project must pass QA prior to release.',
