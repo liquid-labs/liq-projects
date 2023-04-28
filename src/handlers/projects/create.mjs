@@ -1,9 +1,9 @@
 import * as fs from 'node:fs/promises'
 
+import createError from 'http-errors'
 import shell from 'shelljs'
 
 import { readFJSON, writeFJSON } from '@liquid-labs/federated-json'
-import { getOrgFromKey } from '@liquid-labs/liq-handlers-lib'
 import {
   checkGitHubAPIAccess,
   checkGitHubSSHAccess,
@@ -16,10 +16,15 @@ import { DEFAULT_LICENSE, DEFAULT_VERSION, GITHUB_REPO_KEY } from './_lib/common
 
 const method = 'post'
 const paths = [
-  ['projects', ':orgKey', ':newProjectName', 'create'],
-  ['orgs', ':orgKey', 'projects', ':newProjectName', 'create']
+  ['projects', 'create'],
+  ['orgs', ':orgKey', 'projects', 'create']
 ]
 const parameters = [
+  {
+    name        : 'basename',
+    required    : true,
+    description : 'The basename of the project (without the org qualifier).'
+  },
   {
     name          : 'description',
     isSingleValue : true,
@@ -42,6 +47,12 @@ const parameters = [
     description : 'Suppresses default behavior of proactively creating workspace fork for public repos.'
   },
   {
+    name        : 'org',
+    description : "The liq org key. Required when using the '/projects/create' endpount. Should be omitted if using the '/org/XXX/projects/create' (and must match if provided).",
+    bitReString : '[a-zA-Z][a-zA-Z0-9-]*',
+    optionsFunc : ({ model }) => model.orgsAlphaList
+  },
+  {
     name        : 'public',
     isBoolean   : true,
     description : 'By default, project repositories are created private. If `public` is set to true, then the repository will be made public.'
@@ -57,14 +68,21 @@ parameters.sort((a, b) => a.name.localeCompare(b.name))
 Object.freeze(parameters)
 
 const func = ({ app, model, reporter }) => async(req, res) => {
-  const org = getOrgFromKey({ model, params : req.vars, res })
-  if (org === false) return
+  if (req.vars.org !== undefined && req.vars.orgKey !== undefined && req.vars.org !== req.vars.orgKey) {
+    throw createError.BadRequest(`Both path 'orgKey' (${req.vars.orgKey}) and parameter 'org' (${req.vars.org}) are defined and in conflict. Try again with 'org' parameter omitted or use '/projects/create' form and specify 'org' parameter.`)
+  }
+
+  const orgKey = req.vars.orgKey || req.vars.org
+  const org = model.orgs[orgKey]
+  if (org === undefined) {
+    throw createError.NotFound(`No such org '${orgKey}' found.`)
+  }
+
+  const newProjectName = req.vars.basename
 
   const {
     description,
     license,
-    orgKey,
-    newProjectName,
     noCleanup,
     noFork = false,
     public : publicRepo = false,
