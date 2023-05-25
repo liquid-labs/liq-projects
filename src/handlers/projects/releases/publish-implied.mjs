@@ -8,14 +8,14 @@ const { help, method, parameters } = getPublishEndpointParams({ workDesc : 'impl
 
 const path = ['projects', 'releases', 'publish']
 
-const func = ({ app, model, reporter }) => async(req, res) => {
+const func = ({ app, cache, model, reporter }) => async(req, res) => {
   const cwd = req.get('X-CWD')
   if (cwd === undefined) {
     throw createError.BadRequest("Called 'work document' with implied work, but 'X-CWD' header not found.")
   }
   const [orgKey, localProjectName] = determineImpliedProject({ currDir : cwd }).split('/')
 
-  await doPublish({ app, localProjectName, model, orgKey, reporter, req, res })
+  await doPublish({ app, cache, localProjectName, model, orgKey, reporter, req, res })
 }
 
 export {
