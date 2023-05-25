@@ -7,10 +7,10 @@ const paths = [
   ['orgs', ':orgKey', 'projects', ':localProjectName', 'releases', 'publish']
 ]
 
-const func = ({ app, model, reporter }) => async(req, res) => {
+const func = ({ app, cache, model, reporter }) => async(req, res) => {
   const { localProjectName, orgKey } = req.vars
 
-  await doPublish({ app, localProjectName, model, orgKey, reporter, req, res })
+  await doPublish({ app, cache, localProjectName, model, orgKey, reporter, req, res })
 }
 
 export {

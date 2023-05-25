@@ -36,9 +36,8 @@ const doArchive = async({ app, cache, model, orgKey, localProjectName, reporter,
   const octocache = new Octocache({ authToken })
   try {
     reporter.push(`About to achive ${githubOrg}/${projectBaseName} on GitHub...`)
-    const results = await octocache.request(`PATCH /repos/${githubOrg}/${projectBaseName}`, { archived : true })
+    await octocache.request(`PATCH /repos/${githubOrg}/${projectBaseName}`, { archived : true })
     reporter.push('  success.')
-    console.log(results)
   }
   catch (e) {
     throw createError.BadRequest(`There was a problem archiving '${projectFQN}' on github: ${e.message}`, { cause : e })

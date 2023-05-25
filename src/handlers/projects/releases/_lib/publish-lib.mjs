@@ -10,8 +10,9 @@ import {
 import { httpSmartResponse } from '@liquid-labs/http-smart-response'
 import { cleanupQAFiles, runQA, saveQAFiles } from '@liquid-labs/liq-qa-lib'
 import { tryExec } from '@liquid-labs/shell-toolkit'
-import { nextVersion } from '@liquid-labs/versioning'
+import * as version from '@liquid-labs/versioning'
 
+import { doRelease } from './do-release'
 import { commonProjectPathParameters } from '../../_lib/common-project-path-parameters'
 import { getPackageData } from '../../_lib/get-package-data'
 
@@ -27,11 +28,22 @@ const doActualPublish = ({ originRemote, otp, projectFQN, projectPath, releaseTa
   reporter.push('  success.')
 }
 
-const doPublish = async({ app, localProjectName, model, orgKey, reporter, req, res }) => {
+const doPublish = async({ app, cache, localProjectName, model, orgKey, reporter, req, res }) => {
   reporter.reset()
   reporter = reporter.isolate()
 
-  const { dirtyOK, increment, /* noBrowser, */ noPublish = false, otp, publish } = req.vars
+  const {
+    dirtyOK,
+    increment,
+    name,
+    /* noBrowser, */
+    noPublish = false,
+    noRelease = false,
+    otp,
+    publish,
+    releaseOnly = false,
+    summary
+  } = req.vars
 
   const org = model.orgs[orgKey]
 
@@ -51,7 +63,7 @@ const doPublish = async({ app, localProjectName, model, orgKey, reporter, req, r
   }
 
   // TODO: should be 'org.getSettings(`npm.${npmOrg}.OTP_REQUIRED`)' or similar.
-  if (otp === undefined && app.liq.localSettings.NPM?.['otp-required'] === true) {
+  if (releaseOnly !== true && otp === undefined && app.liq.localSettings.NPM?.['otp-required'] === true) {
     const interrogationBundles = [
       {
         title   : 'One-time-password security verification',
@@ -69,20 +81,42 @@ const doPublish = async({ app, localProjectName, model, orgKey, reporter, req, r
     return
   }
 
+  const currVer = packageSpec.version
+
+  if (releaseOnly === true) {
+    const releaseMsg = await doRelease({
+      app,
+      cache,
+      mainBranch,
+      name,
+      org,
+      projectFQN,
+      releaseVersion : currVer,
+      reporter,
+      summary
+    })
+
+    const msg = reporter.taskReport.join('\n') + '\n\n' + releaseMsg
+
+    httpSmartResponse({ msg, req, res })
+
+    return
+  }
+
   const currentBranch = determineCurrentBranch({ projectPath, reporter })
 
-  const currVer = packageSpec.version
   let nextVer
   if (currentBranch.startsWith('release-')) { // it looks like we're already on the release branch
     nextVer = currentBranch.replace(/^release-([0-9.]+(?:-(?:alpha|beta|rc)\.\d+)?)-.+$/, '$1')
   }
   else {
-    nextVer = nextVersion({ currVer, increment })
+    nextVer = version.nextVersion({ currVer, increment })
   }
 
   const releaseBranch = releaseBranchName({ releaseVersion : nextVer })
+  const releaseTag = 'v' + nextVer
 
-  verifyReadyForRelease({
+  verifyReadyForPublish({
     currentBranch,
     dirtyOK,
     mainBranch,
@@ -97,14 +131,12 @@ const doPublish = async({ app, localProjectName, model, orgKey, reporter, req, r
     const checkoutResult = tryExec(`cd '${projectPath}' && git checkout --quiet -b '${releaseBranch}'`)
     if (checkoutResult.code !== 0) { throw createError.InternalServerError(`Failed to checkout release branch '${releaseBranch}': ${checkoutResult.stderr}`) }
   }
-  // else, we are on the release branch, as checked by 'verifyReadyForRelease'
+  // else, we are on the release branch, as checked by 'verifyReadyForPublish'
   // TODO: generate changelog once 'work' history is defined
 
   reporter.push('Building project...')
   const buildResult = tryExec(`cd '${projectPath}' && npm run build`)
   if (buildResult.code !== 0) throw createError.BadRequest('Could not build project for release.')
-
-  const releaseTag = 'v' + nextVer
 
   // npm version will tag and commit
   if (currVer !== nextVer) {
@@ -157,12 +189,28 @@ const doPublish = async({ app, localProjectName, model, orgKey, reporter, req, r
   }
   */
 
+  reporter.push('Updating internal model...')
   model.refreshModel()
+
+  const releaseMsg = noRelease === true
+    ? ''
+    : await doRelease({
+      app,
+      cache,
+      mainBranch,
+      name,
+      org,
+      projectFQN,
+      releaseVersion : nextVer,
+      reporter,
+      summary
+    })
 
   const msg = reporter.taskReport.join('\n') + '\n\n'
     + (publish !== undefined || publishOnPrepare !== undefined
       ? `<bold>Published<rst> project <em>${projectFQN}<rst>.`
       : `<bold>Prepared<rst> project <em>${projectFQN}<rst>; publish manually.`)
+    + ' ' + releaseMsg
 
   httpSmartResponse({ msg, req, res })
 }
@@ -188,6 +236,10 @@ const getPublishEndpointParams = ({ workDesc }) => {
       optionsFetcher : () => ['major', 'minor', 'patch', 'premajor', 'preminor', 'prepatch', 'prerelease', 'pretype']
     },
     {
+      name        : 'name',
+      description : 'Optional "name" for the release. This will be used in the generated changelog.'
+    },
+    {
       name        : 'noBrowser',
       isBoolean   : true,
       description : 'If true, supresses launching of browser to show changelog page.'
@@ -198,14 +250,28 @@ const getPublishEndpointParams = ({ workDesc }) => {
       description : 'If true, skips the publish step. One and only one of `noPublish` and `publish` must be set.'
     },
     {
+      name        : 'noRelease',
+      isBoolean   : true,
+      description : "If true, skips creating the release. Will still publish unless 'noPublish' is also set."
+    },
+    {
       name           : 'publish',
       description    : "May be set to 'release-branch' or 'main-branch'. One and only one of `publish` and `noPublish` must be set unless one of the settings `projects.<project FQN>.releases.",
       matcher        : /^(?:main-branch|release-branch)$/,
       optionsFetcher : () => ['main-branch', 'release-branch']
     },
     {
+      name        : 'releaseOnly',
+      isBoolean   : true,
+      description : "If true, then will create a release based on the current version. This can be used to create a release for versions previously published with 'noRelease' set to true, or in other instances where the release is missing."
+    },
+    {
       name        : 'otp',
       description : 'One time password to be used when publishing the project.'
+    },
+    {
+      name        : 'summary',
+      description : 'Optional short description of the release. This will be used in the changelog if provided.'
     },
     ...commonProjectPathParameters
   ]
@@ -224,7 +290,7 @@ const getPublishEndpointParams = ({ workDesc }) => {
  * the main branch is up to date with the origin remote and vice-a-versa, and there is a package 'qa' script that
  * passes.
  */
-const verifyReadyForRelease = ({
+const verifyReadyForPublish = ({
   currentBranch,
   dirtyOK,
   mainBranch,
