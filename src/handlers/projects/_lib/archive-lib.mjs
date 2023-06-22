@@ -53,7 +53,7 @@ const doArchive = async({ app, cache, model, orgKey, localProjectName, reporter,
       throw createError.InternalServerError(`Project '${projectFQN}' was archived on GitHub, but there was an error removing the local project at '${projectPath}'. Check and address manually.`, { cause : e })
     }
 
-    model.refreshModel()
+    model.load()
   }
   else {
     reporter.push('Skipping deletion of local project.')

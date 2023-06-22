@@ -136,7 +136,7 @@ const doRename = async({ localProjectName, model, orgKey, reporter, req, res }) 
   reporter.push(`Updating <code>${pkgPath}<rst> with new project name '${newFQN}`)
   await fs.writeFile(pkgPath, JSON.stringify(packageSpec, null, '  '))
 
-  model.refreshModel()
+  model.load()
 
   const msg = reporter.taskReport.join('\n') + '\n\n'
     + `<em>Renamed<rst> <code>${projectFQN}<rst> to <code>${newFQN}<rst>.`

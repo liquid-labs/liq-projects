@@ -73,7 +73,7 @@ const doDestroy = async({ app, cache, localProjectName, model, orgKey, reporter,
     throw createError.InternalServerError(`Project '${projectFQN}' was removed from GitHub, but there was an error removing the local project at '${projectPath}'. Check and address manually.`, { cause : e })
   }
 
-  model.refreshModel()
+  model.load()
 
   let msg = reporter.taskReport.join('\n')
     + '\n\n'

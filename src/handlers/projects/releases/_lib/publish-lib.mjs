@@ -190,7 +190,7 @@ const doPublish = async({ app, cache, localProjectName, model, orgKey, reporter,
   */
 
   reporter.push('Updating internal model...')
-  model.refreshModel()
+  model.load()
 
   const releaseMsg = noRelease === true
     ? ''
