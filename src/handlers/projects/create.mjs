@@ -262,7 +262,7 @@ const func = ({ app, model, reporter }) => async(req, res) => {
 
   await fs.rename(stagingDir, app.liq.playground() + '/' + qualifiedName)
 
-  model.refreshModel()
+  model.load()
 
   res.send(reporter.taskReport.join('\n')).end()
 }

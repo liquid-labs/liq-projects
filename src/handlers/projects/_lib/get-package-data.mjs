@@ -24,7 +24,7 @@ import createError from 'http-errors'
  */
 const getPackageData = async({ localProjectName, model, orgKey, requireImplements }) => {
   const projectFQN = orgKey + '/' + localProjectName
-  const packageSpec = model.playground.projects[projectFQN]?.packageJSON
+  const packageSpec = model.playground.projects.get(projectFQN)?.packageJSON
   if (packageSpec === undefined) {
     throw createError.NotFound(`No such project '${projectFQN}' found in state model.`)
   }

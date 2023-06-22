@@ -53,7 +53,10 @@ const setupPathResolvers = ({ app, model }) => {
   app.liq.pathResolvers.localProjectName = {
     bitReString    : '[a-zA-Z][a-zA-Z0-9-]*',
     optionsFetcher : ({ model, orgKey }) => {
-      return Object.keys(model.playground.orgs[orgKey].projects)
+      return model.playground.projects
+        .list({ rawData : true })
+        .filter(({ orgName }) => orgKey === orgName)
+        .map(({ baseName }) => baseName)
     }
   }
 }
