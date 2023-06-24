@@ -1,6 +1,6 @@
 const DEFAULT_LICENSE = 'UNLICENSED'
 const DEFAULT_VERSION = '1.0.0-alpha.0'
-const GITHUB_REPO_KEY = 'core.github.ORG_NAME'
+const GITHUB_REPO_KEY = 'github.ORG_NAME'
 
 export {
   DEFAULT_LICENSE,
