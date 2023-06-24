@@ -33,7 +33,7 @@ const getPackageData = async({ localProjectName, model, orgKey, requireImplement
   const projectPath = fsPath.join(liqPlayground, orgKey, localProjectName)
   // else we have what looks like a project
 
-  const githubOrg = model.orgs[orgKey].getSetting('core.github.ORG_NAME')
+  const githubOrg = model.orgs[orgKey].getSetting('github.ORG_NAME')
 
   for (const reqImpl of requireImplements || []) {
     const isImplemented = packageSpec?.liq?.tags?.includes(reqImpl)
