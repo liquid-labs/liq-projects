@@ -1,8 +1,9 @@
 /* global describe expect test */
+import * as fsPath from 'node:path'
 
 import { getFiles } from '../get-files'
 
-const dataRoot = process.env.PWD + '/test-staging/handlers/projects/_lib/test/data'
+const dataRoot = fsPath.join(__dirname, 'data')
 
 describe('getFiles', () => {
   test('recursively finds all files', async() => {

@@ -114,7 +114,7 @@ const doRename = async({ localProjectName, model, orgKey, reporter, req, res }) 
     }
   }
 
-  const [originRemote] = determineOriginAndMain({ projectPath : projectPath })
+  const [originRemote] = determineOriginAndMain({ projectPath })
   const newURL = `git@github.com:${githubOrg}/${newBaseName}.git`
   reporter.push(`Updating origin remote URL to ${newURL}...`)
   const urlResult = shell.exec(`cd ${projectPath} && git remote set-url ${originRemote} ${newURL}`)

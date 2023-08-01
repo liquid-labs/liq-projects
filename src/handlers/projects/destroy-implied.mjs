@@ -13,7 +13,7 @@ const func = ({ app, cache, model, reporter }) => async(req, res) => {
 
   const cwd = req.get('X-CWD')
   if (cwd === undefined) {
-    throw createError.BadRequest("Called 'work destroy' with implied work, but 'X-CWD' header not found.")
+    throw createError.BadRequest("Called 'projects destroy' with implied work, but 'X-CWD' header not found.")
   }
   const [orgKey, localProjectName] = determineImpliedProject({ currDir : cwd }).split('/')
 

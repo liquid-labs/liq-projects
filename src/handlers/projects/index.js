@@ -13,6 +13,8 @@ import * as renameHandler from './rename'
 import * as renameImpliedHandler from './rename-implied'
 import * as setupHandler from './setup'
 import * as setupImpliedHandler from './setup-implied'
+import * as updateHandler from './update'
+import * as updateImpliedHandler from './update-implied'
 
 handlers.push(
   archiveHandler,
@@ -27,7 +29,9 @@ handlers.push(
   renameHandler,
   renameImpliedHandler,
   setupHandler,
-  setupImpliedHandler
+  setupImpliedHandler,
+  updateHandler,
+  updateImpliedHandler
 )
 
 export { handlers }
