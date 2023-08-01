@@ -1,58 +1,155 @@
-ifneq (grouped-target, $(findstring grouped-target,$(.FEATURES)))
-ERROR:=$(error This version of make does not support required 'grouped-target' (4.3+).)
-endif
-
+BUILD_KEY:=liq-projects
+SRC:=src
+CATALYST_JS_LIB_SRC_PATH:=$(SRC)
+CATALYST_NODE_PROJECT_LIB_ENTRY_POINT=$(CATALYST_JS_LIB_SRC_PATH)/index.js
+# The following are set by the preamble when installed
+# BUILD_KEY, SRC, CATALYST_JS_LIB_SRC_PATH, CATALYST_JS_CLI_SRC_PATH, CATALYST_JS_CLI, CATALYST_NODE_PROJECT_CLI_ENTRY_POINT, CATALYST_NODE_PROJECT_LIB_ENTRY_POINT
 .DELETE_ON_ERROR:
 .PHONY: all build lint lint-fix qa test
 
+SHELL:=bash
+
 default: build
 
-CATALYST_SCRIPTS:=npx catalyst-scripts
-
-LIQ_PROJECTS_SRC:=src
-LIQ_PROJECTS_FILES:=$(shell find $(LIQ_PROJECTS_SRC) \( -name "*.js" -o -name "*.mjs" \) -not -path "*/test/*" -not -name "*.test.js")
-LIQ_PROJECTS_ALL_FILES:=$(shell find $(LIQ_PROJECTS_SRC) \( -name "*.js" -o -name "*.mjs" \))
-LIQ_PROJECTS_TEST_SRC_FILES:=$(shell find $(LIQ_PROJECTS_SRC) -name "*.js")
-LIQ_PROJECTS_TEST_BUILT_FILES:=$(patsubst $(LIQ_PROJECTS_SRC)/%, test-staging/%, $(LIQ_PROJECTS_TEST_SRC_FILES))
-LIQ_PROJECTS_TEST_SRC_DATA:=$(shell find $(LIQ_PROJECTS_SRC) -path "*/test/data/*" -type f)
-LIQ_PROJECTS_TEST_BUILT_DATA:=$(patsubst $(LIQ_PROJECTS_SRC)/%, test-staging/%, $(LIQ_PROJECTS_TEST_SRC_DATA))
-LIQ_PROJECTS:=dist/liq-projects.js
-
+DIST:=dist
+DOCS:=docs
+QA:=qa
 TEST_STAGING:=test-staging
 
-BUILD_TARGETS:=$(LIQ_PROJECTS)
+.PRECIOUS: $(QA)/unit-test.txt $(QA)/lint.txt
+
+CATALYST_JS_BABEL:=npx babel
+CATALYST_JS_JEST:=npx jest
+CATALYST_JS_ROLLUP:=npx rollup
+CATALYST_JS_ESLINT:=npx eslint
+
+CATALYST_NODE_PROJECT_JS_SELECTOR=\( -name "*.js" -o -name "*.cjs" -o -name "*.mjs" \)
+CATALYST_NODE_PROJECT_DATA_SELECTOR=\( -path "*/test/data/*"  -o -path "*/test/data-*/*" -o -path "*/test-data/*" \)
+
+# all source files (cli and lib)
+CATALYST_JS_ALL_FILES_SRC:=$(shell find $(SRC) $(CATALYST_NODE_PROJECT_JS_SELECTOR) -not $(CATALYST_NODE_PROJECT_DATA_SELECTOR))
+CATALYST_JS_TEST_FILES_SRC:=$(shell find $(SRC) $(CATALYST_NODE_PROJECT_JS_SELECTOR) -not $(CATALYST_NODE_PROJECT_DATA_SELECTOR) -type f)
+CATALYST_JS_TEST_FILES_BUILT:=$(patsubst %.cjs, %.js, $(patsubst %.mjs, %.js, $(patsubst $(SRC)/%, test-staging/%, $(CATALYST_JS_TEST_FILES_SRC))))
+# all test data (cli and lib)
+CATALYST_JS_TEST_DATA_SRC:=$(shell find $(SRC) -type f $(CATALYST_NODE_PROJECT_DATA_SELECTOR))
+CATALYST_JS_TEST_DATA_BUILT:=$(patsubst $(SRC)/%, $(TEST_STAGING)/%, $(CATALYST_JS_TEST_DATA_SRC))
+# lib specific files
+CATALYST_JS_LIB_FILES_SRC:=$(shell find $(CATALYST_JS_LIB_SRC_PATH) $(CATALYST_NODE_PROJECT_JS_SELECTOR) -not $(CATALYST_NODE_PROJECT_DATA_SELECTOR) -not -name "*.test.js")
+CATALYST_JS_LIB:=dist/$(BUILD_KEY).js
+# cli speciifc files
+ifdef CATALYST_JS_CLI_SRC_PATH
+CATALYST_JS_CLI_FILES_SRC:=$(shell find $(CATALYST_JS_CLI_SRC_PATH) $(CATALYST_NODE_PROJECT_JS_SELECTOR) -not $(CATALYST_NODE_PROJECT_DATA_SELECTOR) -not -name "*.test.js")
+endif
+
+LINT_IGNORE_PATTERNS:=--ignore-pattern '$(DIST)/**/*' \
+--ignore-pattern '$(TEST_STAGING)/**/*' \
+--ignore-pattern '$(DOCS)/**/*'
 
 # build rules
-build: $(BUILD_TARGETS)
+INSTALL_BASE:=$(shell npm explore @liquid-labs/catalyst-scripts-node-project -- pwd)
 
-all: build
+# We do this here so the 'rm -rf' to reset the built files will run before other targets (which may copy or create 
+# files).
+TEST_TARGETS:=$(CATALYST_JS_TEST_FILES_BUILT)
 
-$(LIQ_PROJECTS): package.json $(LIQ_PROJECTS_FILES)
-	JS_SRC=$(LIQ_PROJECTS_SRC) $(CATALYST_SCRIPTS) build
+ifneq ($(wildcard make/*.mk),)
+include make/*.mk
+endif
+
+ifdef CATALYST_JS_LIB_SRC_PATH
+BUILD_TARGETS+=$(CATALYST_JS_LIB)
+
+$(CATALYST_JS_LIB): package.json $(CATALYST_JS_LIB_FILES_SRC)
+	JS_BUILD_TARGET=$(CATALYST_NODE_PROJECT_LIB_ENTRY_POINT) \
+	  JS_OUT=$@ \
+		$(CATALYST_JS_ROLLUP) --config $(INSTALL_BASE)/dist/rollup/rollup.config.mjs
+endif
+
+ifdef CATALYST_JS_CLI_SRC_PATH
+BUILD_TARGETS+=$(CATALYST_JS_CLI)
+
+# see DEVELOPER_NOTES.md 'CLI build'
+$(CATALYST_JS_CLI): package.json $(CATALYST_JS_ALL_FILES_SRC)
+	JS_BUILD_TARGET=$(CATALYST_NODE_PROJECT_CLI_ENTRY_POINT) \
+	  JS_OUT=$@ \
+	  JS_OUT_PREAMBLE='#!/usr/bin/env -S node --enable-source-maps' \
+		$(CATALYST_JS_ROLLUP) --config $(INSTALL_BASE)/dist/rollup/rollup.config.mjs
+	chmod a+x $@
+endif
+
 
 # test
-$(LIQ_PROJECTS_TEST_BUILT_DATA): test-staging/%: $(LIQ_PROJECTS_SRC)/%
+UNIT_TEST_REPORT:=$(QA)/unit-test.txt
+UNIT_TEST_PASS_MARKER:=$(QA)/.unit-test.passed
+
+$(CATALYST_JS_TEST_DATA_BUILT): test-staging/%: $(SRC)/%
 	@echo "Copying test data..."
 	@mkdir -p $(dir $@)
 	@cp $< $@
 
-$(LIQ_PROJECTS_TEST_BUILT_FILES) &: $(LIQ_PROJECTS_ALL_FILES)
-	JS_SRC=$(LIQ_PROJECTS_SRC) $(CATALYST_SCRIPTS) pretest
+# Jest is not picking up the external maps, so we inline them for the test. (As of?)
+$(CATALYST_JS_TEST_FILES_BUILT) &: $(CATALYST_JS_ALL_FILES_SRC)
+	rm -rf $(TEST_STAGING)
+	mkdir -p $(TEST_STAGING)
+	NODE_ENV=test $(CATALYST_JS_BABEL) \
+		--config-file=$(INSTALL_BASE)/dist/babel/babel.config.cjs \
+		--out-dir=./$(TEST_STAGING) \
+		--source-maps=inline \
+		$(SRC)
 
-last-test.txt: $(LIQ_PROJECTS_TEST_BUILT_FILES) $(LIQ_PROJECTS_TEST_BUILT_DATA)
-	( set -e; set -o pipefail; \
-		JS_SRC=$(TEST_STAGING) $(CATALYST_SCRIPTS) test 2>&1 | tee last-test.txt; )
+# Tried to use '--testPathPattern=$(TEST_STAGING)' awithout the 'cd $(TEST_STAGING)', but it seemed to have no effect'
+# '--runInBand' because some suites require serial execution (yes, it's "best practice" to have unit tests totally 
+# independent, but in practice there are sometimes good reasons why it's useful or necessary to run sequentially); 
+# also, it may be faster this way; see:
+# https://stackoverflow.com/questions/43864793/why-does-jest-runinband-speed-up-tests
+$(UNIT_TEST_PASS_MARKER) $(UNIT_TEST_REPORT): package.json $(CATALYST_JS_TEST_FILES_BUILT) $(CATALYST_JS_TEST_DATA_BUILT)
+	@rm -f $@
+	@mkdir -p $(dir $@)
+	@echo -n 'Test git rev: ' > $(UNIT_TEST_REPORT)
+	@git rev-parse HEAD >> $(UNIT_TEST_REPORT)
+	@( set -e; set -o pipefail; \
+		( cd $(TEST_STAGING) && $(CATALYST_JS_JEST) \
+			--config=$(INSTALL_BASE)/dist/jest/jest.config.js \
+			--runInBand \
+			$(TEST) 2>&1 ) \
+		| tee -a $(UNIT_TEST_REPORT); \
+		touch $@ )
 
-test: last-test.txt
+TEST_TARGETS+=$(UNIT_TEST_PASS_MARKER) $(UNIT_TEST_REPORT)
 
 # lint rules
-last-lint.txt: $(LIQ_PROJECTS_ALL_FILES)
-	( set -e; set -o pipefail; \
-		JS_LINT_TARGET=$(LIQ_PROJECTS_SRC) $(CATALYST_SCRIPTS) lint | tee last-lint.txt; )
+LINT_REPORT:=$(QA)/lint.txt
+LINT_PASS_MARKER:=$(QA)/.lint.passed
+$(LINT_PASS_MARKER) $(LINT_REPORT): $(CATALYST_JS_LIB_ALL_FILES)
+	@mkdir -p $(dir $@)
+	@echo -n 'Test git rev: ' > $(LINT_REPORT)
+	@git rev-parse HEAD >> $(LINT_REPORT)
+	@( set -e; set -o pipefail; \
+		$(CATALYST_JS_ESLINT) \
+			--config $(INSTALL_BASE)/dist/eslint/eslint.config.js \
+			--ext .cjs,.js,.mjs,.cjs,.xjs \
+			$(LINT_IGNORE_PATTERNS) \
+			. \
+			| tee -a $(LINT_REPORT); \
+		touch $@ )
 
-lint: last-lint.txt
+LINT_TARGETS+=$(LINT_PASS_MARKER) $(LINT_REPORT)
 
 lint-fix:
-	JS_LINT_TARGET=$(LIQ_PROJECTS_SRC) $(CATALYST_SCRIPTS) lint-fix
+	@( set -e; set -o pipefail; \
+		$(CATALYST_JS_ESLINT) \
+			--config $(INSTALL_BASE)/dist/eslint/eslint.config.js \
+			--ext .js,.mjs,.cjs,.xjs \
+			$(LINT_IGNORE_PATTERNS) \
+			--fix . )
+
+
+build: $(BUILD_TARGETS)
+
+test: $(TEST_TARGETS)
+
+lint: $(LINT_TARGETS)
 
 qa: test lint
+
+all: build
