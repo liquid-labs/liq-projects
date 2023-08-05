@@ -3,6 +3,8 @@ import * as path from 'path'
 
 import findPlugins from 'find-plugins'
 
+import { LIQ_HOME } from '@liquid-labs/liq-defaults'
+
 const setup = ({ app, model, reporter }) => {
   setupPathResolvers({ app, model })
   installProjectPlugins({ app, model, reporter })
@@ -13,13 +15,13 @@ const setup = ({ app, model, reporter }) => {
 * plugins.
 */
 const installProjectPlugins = ({ app, model, reporter }) => {
-  const pluginPkg = path.join(process.env.HOME, '.liq', 'plugins', 'liq-projects', 'package.json')
+  const pluginPkg = path.join(LIQ_HOME(), 'plugins', 'liq-projects', 'package.json')
   if (fs.statSync(pluginPkg, { throwIfNoEntry : false }) === undefined) {
     reporter.log(`No plugin entries (${path.dirname(pluginPkg)})...`)
     return
   }
 
-  const pluginDir = path.join(process.env.HOME, '.liq', 'plugins', 'liq-projects', 'node_modules')
+  const pluginDir = path.join(LIQ_HOME(), 'plugins', 'liq-projects', 'node_modules')
   reporter.log(`Searching for audit plugins (in ${path.dirname(pluginDir)})...`)
   const pluginOptions = {
     pkg    : pluginPkg,
@@ -45,12 +47,12 @@ const installProjectPlugins = ({ app, model, reporter }) => {
 }
 
 const setupPathResolvers = ({ app, model }) => {
-  app.liq.pathResolvers.newProjectName = {
+  app.ext.pathResolvers.newProjectName = {
     bitReString    : '[a-zA-Z][a-zA-Z0-9-]*',
     optionsFetcher : () => []
   }
 
-  app.liq.pathResolvers.localProjectName = {
+  app.ext.pathResolvers.localProjectName = {
     bitReString    : '[a-zA-Z][a-zA-Z0-9-]*',
     optionsFetcher : ({ model, orgKey }) => {
       return model.playground.projects

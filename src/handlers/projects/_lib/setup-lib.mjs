@@ -13,6 +13,7 @@ import {
 } from '@liquid-labs/github-toolkit'
 import { httpSmartResponse } from '@liquid-labs/http-smart-response'
 import { getOrgFromKey } from '@liquid-labs/liq-handlers-lib'
+import { LIQ_PLAYGROUND } from '@liquid-labs/liq-defaults'
 
 import { commonProjectPathParameters } from './common-project-path-parameters'
 import { commonProjectSetupParameters } from './common-project-setup-parameters'
@@ -41,7 +42,7 @@ const doSetup = async({ localProjectName, model, orgKey, reporter, req, res }) =
   } = req.vars
 
   const projectPath = req.vars.projectPath
-    || fsPath.join(process.env.HOME, '.liq', 'playground', orgKey, localProjectName)
+    || fsPath.join(LIQ_PLAYGROUND(), orgKey, localProjectName)
   const githubOrg = org.getSetting(GITHUB_REPO_KEY)
   const projectFQN = githubOrg + '/' + localProjectName
 

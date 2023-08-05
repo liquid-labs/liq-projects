@@ -2,6 +2,8 @@ import * as fsPath from 'node:path'
 
 import createError from 'http-errors'
 
+import { LIQ_PLAYGROUND } from '@liquid-labs/liq-defaults'
+
 /**
  * Retrieve the `package.json` data while extracting commonly useful bits.
  *
@@ -29,8 +31,7 @@ const getPackageData = async({ localProjectName, model, orgKey, requireImplement
     throw createError.NotFound(`No such project '${projectFQN}' found in state model.`)
   }
 
-  const liqPlayground = fsPath.join(process.env.LIQ_HOME || fsPath.join(process.env.HOME, '.liq'), 'playground')
-  const projectPath = fsPath.join(liqPlayground, orgKey, localProjectName)
+  const projectPath = fsPath.join(LIQ_PLAYGROUND(), orgKey, localProjectName)
   // else we have what looks like a project
 
   const githubOrg = model.orgs[orgKey].getSetting('github.ORG_NAME')

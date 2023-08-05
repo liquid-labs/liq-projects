@@ -63,7 +63,7 @@ const doPublish = async({ app, cache, localProjectName, model, orgKey, reporter,
   }
 
   // TODO: should be 'org.getSettings(`npm.${npmOrg}.OTP_REQUIRED`)' or similar.
-  if (releaseOnly !== true && otp === undefined && app.liq.localSettings.NPM?.['otp-required'] === true) {
+  if (releaseOnly !== true && otp === undefined && app.ext.localSettings.NPM?.['otp-required'] === true) {
     const interrogationBundles = [
       {
         title   : 'One-time-password security verification',
