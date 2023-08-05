@@ -145,7 +145,7 @@ parameters.<span class="hljs-title function_">sort</span>(<span class="hljs-func
     <span class="hljs-keyword">return</span> failures.<span class="hljs-property">length</span> === <span class="hljs-number">0</span>
   }
 
-  <span class="hljs-keyword">const</span> stagingDir = <span class="hljs-string">`<span class="hljs-subst">${app.liq.home()}</span>/tmp/liq-core/project-staging/<span class="hljs-subst">${newProjectName}</span>`</span>
+  <span class="hljs-keyword">const</span> stagingDir = <span class="hljs-string">`<span class="hljs-subst">${app.ext.home()}</span>/tmp/liq-core/project-staging/<span class="hljs-subst">${newProjectName}</span>`</span>
   <span class="hljs-keyword">const</span> qualifiedName = orgGithubName + <span class="hljs-string">&#x27;/&#x27;</span> + newProjectName
 
   <span class="hljs-keyword">try</span> {

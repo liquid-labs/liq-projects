@@ -137,7 +137,7 @@ const func = ({ app, model, reporter }) => async(req, res) => {
     return failures.length === 0
   }
 
-  const stagingDir = `${app.liq.home()}/tmp/liq-core/project-staging/${newProjectName}`
+  const stagingDir = `${app.ext.home()}/tmp/liq-core/project-staging/${newProjectName}`
   const qualifiedName = orgGithubName + '/' + newProjectName
 
   try {
@@ -260,7 +260,7 @@ const func = ({ app, model, reporter }) => async(req, res) => {
     return
   }
 
-  await fs.rename(stagingDir, app.liq.playground() + '/' + qualifiedName)
+  await fs.rename(stagingDir, app.ext.playground() + '/' + qualifiedName)
 
   model.load()
 

@@ -2,6 +2,7 @@ import * as fs from 'fs'
 import * as sysPath from 'path'
 
 import { httpSmartResponse } from '@liquid-labs/http-smart-response'
+import { LIQ_PLAYGROUND } from '@liquid-labs/liq-defaults'
 import { updateDeps } from '@liquid-labs/liq-projects-lib'
 
 const method = 'put'
@@ -18,7 +19,7 @@ const parameters = [
 const doUpdate = async({ localProjectName, model, orgKey, reporter, req, res }) => {
   const { dryRun } = req.vars
 
-  const localProjectPath = sysPath.join(process.env.HOME, '.liq', 'playground', orgKey, localProjectName)
+  const localProjectPath = sysPath.join(LIQ_PLAYGROUND(), orgKey, localProjectName)
   if (!fs.existsSync(localProjectPath)) {
     res.status(404).json({ message : `Did not find expected local checkout for project '${orgKey}/${localProjectName}'.` })
     return
