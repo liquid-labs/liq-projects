@@ -1,11 +1,16 @@
 import * as fs from 'fs'
 import * as path from 'path'
 
+import createError from 'http-errors'
 import findPlugins from 'find-plugins'
 
+import { readFJSON } from '@liquid-labs/federated-json'
+import { checkGitHubAPIAccess, checkGitHubSSHAccess } from '@liquid-labs/github-toolkit'
+import { types } from '@liquid-labs/liq-credentials-db'
 import { LIQ_HOME } from '@liquid-labs/liq-defaults'
 
 const setup = ({ app, model, reporter }) => {
+  setupCredentials({ app })
   setupPathResolvers({ app, model })
   installProjectPlugins({ app, model, reporter })
 }
@@ -44,6 +49,37 @@ const installProjectPlugins = ({ app, model, reporter }) => {
     Object.assign(model.projects.creationTypes, creationTypes)
     Object.assign(model.projects.setupFunctions, setupFunctions)
   }
+}
+
+const setupCredentials = ({ app }) => {
+  app.ext.credentialsDB.registerCredentialType({
+    key         : 'GITHUB_SSH',
+    name        : 'GitHub SSH key',
+    description : 'Used to authenticate user for git operations such as clone, fetch, and push.',
+    type        : types.SSH_KEY_PAIR,
+    verifyFunc  : ({ files }) => checkGitHubAPIAccess({ filePath : files[0] })
+  })
+  app.ext.credentialsDB.registerCredentialType({
+    key          : 'GITHUB_API',
+    name         : 'GitHub API token',
+    description  : 'Used to authenticate REST/API actions.',
+    type         : types.AUTH_TOKEN,
+    verifyFunc   : ({ files }) => checkGitHubSSHAccess({ privKeyPath : files[0] }),
+    getTokenFunc : ({ files }) => {
+      let credentialData
+      try {
+        credentialData = readFJSON(files[0], { readAs : 'yaml' })
+      }
+      catch (e) {
+        throw createError.InternalServerError("There was a problem reading the 'GITHUB_API' credential file",
+          { cause : e })
+      }
+      const token = credentialData?.['github.com']?.[0]?.oauth_token
+      if (token === undefined) { throw createError.NotFound("The 'GITHUB_API' token was not defined in the credential source.") }
+
+      return token
+    }
+  })
 }
 
 const setupPathResolvers = ({ app, model }) => {

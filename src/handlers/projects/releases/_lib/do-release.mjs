@@ -1,14 +1,14 @@
 import { Octocache } from '@liquid-labs/octocache'
 
-import { CredentialsDB, purposes } from '@liquid-labs/liq-credentials-db'
+import { purposes } from '@liquid-labs/liq-credentials-db'
 import { determineCurrentRelease } from '@liquid-labs/github-toolkit'
 import * as version from '@liquid-labs/versioning'
 
 const doRelease = async({ app, cache, mainBranch, name, org, projectFQN, releaseVersion, reporter, summary }) => {
   reporter.push('Creating GitHub release...')
 
-  const credDB = new CredentialsDB({ app, cache })
-  const authToken = credDB.getToken(purposes.GITHUB_API) // TODO: check we have access before doinganything...
+  const credDB = app.ext.credentialsDB
+  const authToken = credDB.getToken('GITHUB_API') // TODO: check we have access before doinganything...
 
   const githubOwner = org.getSetting('github.ORG_NAME')
   const [, project] = projectFQN.split('/')
