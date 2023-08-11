@@ -6,7 +6,7 @@ import createError from 'http-errors'
 
 import { checkGitHubAPIAccess } from '@liquid-labs/github-toolkit'
 import { httpSmartResponse } from '@liquid-labs/http-smart-response'
-import { CredentialsDB, purposes } from '@liquid-labs/liq-credentials-db'
+import { purposes } from '@liquid-labs/liq-credentials-db'
 import { Octocache } from '@liquid-labs/octocache'
 
 import { commonProjectPathParameters } from './common-project-path-parameters'
@@ -31,8 +31,8 @@ const doDestroy = async({ app, cache, localProjectName, model, orgKey, reporter,
   // user may overrid the standard path v but usually won't
   const projectPath = req.vars.projectPath || pkgData.projectPath
 
-  const credDB = new CredentialsDB({ app, cache })
-  const authToken = credDB.getToken(purposes.GITHUB_API)
+  const credDB = app.ext.credentialsDB
+  const authToken = credDB.getToken('GITHUB_API')
 
   const octocache = new Octocache({ authToken })
   try { // TODO: move to github-toolkit as 'deleteGitHubProject'
