@@ -6,7 +6,6 @@ import createError from 'http-errors'
 
 import { checkGitHubAPIAccess } from '@liquid-labs/github-toolkit'
 import { httpSmartResponse } from '@liquid-labs/http-smart-response'
-import { purposes } from '@liquid-labs/liq-credentials-db'
 import { Octocache } from '@liquid-labs/octocache'
 
 import { commonProjectPathParameters } from './common-project-path-parameters'

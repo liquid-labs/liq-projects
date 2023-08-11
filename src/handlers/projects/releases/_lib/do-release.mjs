@@ -1,6 +1,5 @@
 import { Octocache } from '@liquid-labs/octocache'
 
-import { purposes } from '@liquid-labs/liq-credentials-db'
 import { determineCurrentRelease } from '@liquid-labs/github-toolkit'
 import * as version from '@liquid-labs/versioning'
 
