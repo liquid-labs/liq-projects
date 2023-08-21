@@ -10,6 +10,7 @@ import {
   setupGitHubLabels,
   setupGitHubMilestones
 } from '@liquid-labs/github-toolkit'
+import { LIQ_HOME, LIQ_PLAYGROUND } from '@liquid-labs/liq-defaults'
 
 import { commonProjectSetupParameters } from './_lib/common-project-setup-parameters'
 import { DEFAULT_LICENSE, DEFAULT_VERSION, GITHUB_REPO_KEY } from './_lib/common-constants'
@@ -137,7 +138,7 @@ const func = ({ app, model, reporter }) => async(req, res) => {
     return failures.length === 0
   }
 
-  const stagingDir = `${app.ext.home()}/tmp/liq-core/project-staging/${newProjectName}`
+  const stagingDir = `${LIQ_HOME()}/tmp/liq-core/project-staging/${newProjectName}`
   const qualifiedName = orgGithubName + '/' + newProjectName
 
   try {
@@ -260,7 +261,7 @@ const func = ({ app, model, reporter }) => async(req, res) => {
     return
   }
 
-  await fs.rename(stagingDir, app.ext.playground() + '/' + qualifiedName)
+  await fs.rename(stagingDir, LIQ_PLAYGROUND() + '/' + qualifiedName)
 
   model.load()
 
