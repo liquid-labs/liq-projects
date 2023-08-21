@@ -1,0 +1,25 @@
+Test git rev: 494fb6c700b4fde82e6921ca085ec83d63ba95e8
+PASS handlers/projects/_lib/test/get-files.test.js
+  getFiles
+    ✓ recursively finds all files (3 ms)
+    ✓ 'onlyDirs: true' recursively finds all directories (1 ms)
+    ✓ 'depth: 1' limits search to root directory (1 ms)
+    ✓ 'depth: 2' limits search to root directory and direct child files (1 ms)
+    ✓ 'depth: 2, onlyDirs: true' limits search to root directory and direct child dirs (1 ms)
+    ✓ 'noRecurse: true' limits search to root directory
+    ✓ 'noRecurse' overrides depth (2 ms)
+    ✓ 'reName: (?:.txt) filters out non-'.txt' files
+    ✓ will ignore regular dot-files when 'ignoreDotFiles: true'
+    ✓ will ignore dir dot-files when 'ignoreDotFiles: true' (1 ms)
+
+---------------|---------|----------|---------|---------|-------------------
+File           | % Stmts | % Branch | % Funcs | % Lines | Uncovered Line #s 
+---------------|---------|----------|---------|---------|-------------------
+All files      |     100 |      100 |     100 |     100 |                   
+ get-files.mjs |     100 |      100 |     100 |     100 |                   
+---------------|---------|----------|---------|---------|-------------------
+Test Suites: 1 passed, 1 total
+Tests:       10 passed, 10 total
+Snapshots:   0 total
+Time:        0.267 s
+Ran all test suites.
