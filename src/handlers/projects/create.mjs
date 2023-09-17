@@ -258,6 +258,7 @@ const func = ({ app, model, reporter }) => async(req, res) => {
   }
   catch (e) {
     await cleanup({ msg : `There was an error creating project '${qualifiedName}'; ${e.message}`, res, status : 500 })
+    process.stderr.write(e.stack)
     return
   }
 
