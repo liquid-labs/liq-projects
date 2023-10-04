@@ -135,8 +135,8 @@ const doPublish = async({ app, cache, localProjectName, model, orgKey, reporter,
   // TODO: generate changelog once 'work' history is defined
 
   reporter.push('Building project...')
-  const buildResult = tryExec(`cd '${projectPath}' && npm run build`)
-  if (buildResult.code !== 0) throw createError.BadRequest('Could not build project for release.')
+  const buildResult = tryExec(`cd '${projectPath}' && npm run build`, { noThrow : true })
+  if (buildResult.code !== 0) throw createError.BadRequest('Could not build project for release:' + buildResult.stderr)
 
   // npm version will tag and commit
   if (currVer !== nextVer) {
