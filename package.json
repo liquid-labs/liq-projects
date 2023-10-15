@@ -51,7 +51,7 @@
     "@liquid-labs/liq-qa-lib": "^1.0.0-alpha.9",
     "@liquid-labs/octocache": "^1.0.0-alpha.3",
     "@liquid-labs/question-and-answer": "^1.0.0-alpha.8",
-    "@liquid-labs/versioning": "^1.0.0-alpha.6",
+    "@liquid-labs/semver-plus": "^1.0.0-alpha.8",
     "find-plugins": "^1.1.7",
     "highlight.js": "^11.8.0",
     "http-errors": "^2.0.0",

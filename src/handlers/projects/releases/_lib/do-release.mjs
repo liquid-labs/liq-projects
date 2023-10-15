@@ -1,7 +1,7 @@
 import { Octocache } from '@liquid-labs/octocache'
 
 import { determineCurrentRelease } from '@liquid-labs/github-toolkit'
-import * as version from '@liquid-labs/versioning'
+import * as version from '@liquid-labs/semver-plus'
 
 const doRelease = async({ app, cache, mainBranch, name, org, projectFQN, releaseVersion, reporter, summary }) => {
   reporter.push('Creating GitHub release...')
