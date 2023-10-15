@@ -10,7 +10,7 @@ import {
 import { httpSmartResponse } from '@liquid-labs/http-smart-response'
 import { cleanupQAFiles, runQA, saveQAFiles } from '@liquid-labs/liq-qa-lib'
 import { tryExec } from '@liquid-labs/shell-toolkit'
-import * as version from '@liquid-labs/versioning'
+import * as version from '@liquid-labs/semver-plus'
 
 import { doRelease } from './do-release'
 import { commonProjectPathParameters } from '../../_lib/common-project-path-parameters'
@@ -232,8 +232,8 @@ const getPublishEndpointParams = ({ workDesc }) => {
     {
       name           : 'increment',
       description    : 'Indicates how to increment the version for this release.',
-      matcher        : /^(?:major|minor|patch|premajor|preminor|prepatch|prerelease|pretype)$/,
-      optionsFetcher : () => ['major', 'minor', 'patch', 'premajor', 'preminor', 'prepatch', 'prerelease', 'pretype']
+      matcher        : new RegExp(`^(?:${version.increments.join('|')})$`),
+      optionsFetcher : () => version.increments
     },
     {
       name        : 'name',
