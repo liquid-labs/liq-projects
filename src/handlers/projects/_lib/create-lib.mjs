@@ -33,7 +33,6 @@ const doCreate = async({ reporter, req, res }) => {
   let orgGithubName = req.vars.githubOwner
   const { org: npmOrg, basename } = await getPackageOrgAndBasename({ pkgName : newProjectName })
   if (orgGithubName === undefined) {
-    console.log('newProjectName:', newProjectName, 'npmOrg:', npmOrg) // DEBUG
     orgGithubName = npmOrg // comes out sans '@'
   // TODO: check that we can access this org or something
   }
@@ -210,9 +209,7 @@ const doCreate = async({ reporter, req, res }) => {
   }
   targetDirBits.push(basename)
   const targetDir = fsPath.join(...targetDirBits)
-  console.log('making dir:', fsPath.dirname(targetDir)) // DEBUG
   await fs.mkdir(fsPath.dirname(targetDir), { recursive: true })
-  console.log('renaming ' + stagingDir + ' to ' + targetDir) // DEBUG
   await fs.rename(stagingDir, targetDir)
 
   res.send(reporter.taskReport.join('\n')).end()
