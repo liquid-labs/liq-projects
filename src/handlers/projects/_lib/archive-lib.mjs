@@ -14,7 +14,7 @@ import { getPackageData } from './get-package-data'
  * Implements verifying local status and archiving repositories on GitHub. Used by the named and implied project
  * archive endpoints.
  */
-const doArchive = async({ app, cache, projectName, reporter, res, req }) => {
+const doArchive = async({ app, projectName, reporter, res, req }) => {
   await checkGitHubAPIAccess() // throws HTTP Error on failure
 
   const { keepLocal = false } = req.vars
@@ -30,7 +30,7 @@ const doArchive = async({ app, cache, projectName, reporter, res, req }) => {
 
   // TODO: move to github-toolkit as 'deleteGitHubProject'
   const credDB = app.ext.credentialsDB
-  const authToken = credDB.getToken('GITHUB_API')
+  const authToken = await credDB.getToken('GITHUB_API')
 
   const octocache = new Octocache({ authToken })
   try {

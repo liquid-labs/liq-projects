@@ -7,7 +7,9 @@ import * as os from 'node:os'
 import { CredentialsDB } from '@liquid-labs/liq-credentials-db'
 import { setupCredentials } from '@liquid-labs/credentials-db-plugin-github'
 import { Octocache } from '@liquid-labs/octocache'
+import { tryExec } from '@liquid-labs/shell-toolkit'
 
+import { doArchive } from '../archive-lib'
 import { doCreate } from '../create-lib'
 import { doRename } from '../rename-lib'
 
@@ -66,25 +68,24 @@ describe('project lifecyle', () => {
     })
   })
 
+  // the rename section
+  const renamedName = '@' + newProjectOrg + '/test-project-new-name-' + randKey
+  const renamedProjectPath = fsPath.join(playgroundDir, ...(renamedName.split('/')))
+  const renamedPkgJSONPath = fsPath.join(renamedProjectPath, 'package.json')
+
   describe('rename project', () => {
-    const newName = '@' + newProjectOrg + '/test-project-new-name-' + randKey
-    const renamedProjectPath = fsPath.join(playgroundDir, ...(newName.split('/')))
-    const renamedPkgJSONPath = fsPath.join(renamedProjectPath, 'package.json')
     let renamedPkgJSON
 
     beforeAll(async() => {
-      const reqMock = { vars : { newName }, accepts: () => 'application/json' }
-      console.log('reqMock:', reqMock) // DEBUG
+      const reqMock = { vars : { newName : renamedName }, accepts: () => 'application/json' }
 
       const pkgJSON = JSON.parse(await fs.readFile(newPkgJSONPath, { encoding : 'utf8' }))
-      console.log('pkgJSON:', pkgJSON) // DEBUG
 
       const appMock = {
         ext : {
           _liqProjects : {
             playgroundMonitor : {
               getProjectData : (project) => {
-                console.log('project:', 'newProjectName:', newProjectName, project === newProjectName) // DEBUG
                 return project === newProjectName
                   ? { pkgJSON, projectPath : newProjectPath }
                   : undefined
@@ -98,5 +99,51 @@ describe('project lifecyle', () => {
     })
 
     test('moves the project to the new playground location', () => expect(existsSync(renamedPkgJSONPath)).toBe(true))
+  })
+
+  describe('archive project', () => {
+
+    beforeAll(async() => {
+      // Normally, the rename would get associated to a new unit of work and saved there. That ends up making the local 
+      // git repo "clean". We simulate the end result of all that here.
+      tryExec(`cd '${renamedProjectPath}' && git commit -am 'clean brnaches after rename' && git push`)
+
+      const reqMock = { vars : { }, accepts: () => 'application/json' }
+
+      const pkgJSON = JSON.parse(await fs.readFile(renamedPkgJSONPath, { encoding : 'utf8' }))
+      console.log('pkgJSON:', pkgJSON) // DEBUG
+
+      const credentialsDB = new CredentialsDB()
+      setupCredentials({ credentialsDB })
+
+      const appMock = {
+        ext : {
+          _liqProjects : {
+            playgroundMonitor : {
+              getProjectData : (project) => {
+                return project === renamedName
+                  ? { pkgJSON, projectPath : renamedProjectPath }
+                  : undefined
+              }
+            }
+          }, // _liqProjects
+          credentialsDB
+        }
+      }
+
+      await doArchive({ app : appMock, projectName : renamedName, reporter : reporterMock, req : reqMock, res : resMock })
+    })
+
+    test('removes the local project clone', () => expect(existsSync(renamedPkgJSONPath)).toBe(false))
+
+    test('archives the project on GitHub', async () => {
+      const credDB = new CredentialsDB()
+      setupCredentials({ credentialsDB : credDB })
+      const authToken = await credDB.getToken('GITHUB_API')
+
+      const octocache = new Octocache({ authToken })
+      const repoData = await octocache.request(`GET /repos/${renamedName.slice(1)}`)
+      expect(repoData.archived).toBe(true)
+    })
   })
 })
