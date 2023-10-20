@@ -3,20 +3,21 @@ import { Octocache } from '@liquid-labs/octocache'
 import { determineCurrentRelease } from '@liquid-labs/github-toolkit'
 import * as version from '@liquid-labs/semver-plus'
 
-const doRelease = async({ app, cache, mainBranch, name, org, projectFQN, releaseVersion, reporter, summary }) => {
+import { getPackageData } from '../../_lib/get-package-data'
+
+const doRelease = async({ app, cache, mainBranch, name, projectName, releaseVersion, reporter, summary }) => {
   reporter.push('Creating GitHub release...')
 
   const credDB = app.ext.credentialsDB
   const authToken = credDB.getToken('GITHUB_API') // TODO: check we have access before doinganything...
 
-  const githubOwner = org.getSetting('github.ORG_NAME')
-  const [, project] = projectFQN.split('/')
+  const { githubBasename, githubName, githubOrg: githubOwner } = getPackageData({ app, projectName })
 
   const prerelease = version.prerelease(releaseVersion) !== null
 
   let makeLatest
   if (prerelease === true) {
-    const currentRelease = determineCurrentRelease({ authToken, githubOwner, project, reporter })
+    const currentRelease = determineCurrentRelease({ authToken, githubOwner, project : githubBasename, reporter })
     makeLatest = currentRelease === true
   }
   else {
@@ -27,7 +28,7 @@ const doRelease = async({ app, cache, mainBranch, name, org, projectFQN, release
   const releaseTag = 'v' + releaseVersion
   try {
     const octocache = new Octocache({ authToken })
-    const results = await octocache.request(`POST /repos/${githubOwner}/${project}/releases`, {
+    const results = await octocache.request(`POST /repos/${githubName}/releases`, {
       tag_name               : releaseTag,
       target_commitish       : mainBranch,
       generate_release_notes : true,

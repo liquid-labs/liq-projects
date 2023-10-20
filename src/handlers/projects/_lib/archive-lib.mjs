@@ -14,14 +14,14 @@ import { getPackageData } from './get-package-data'
  * Implements verifying local status and archiving repositories on GitHub. Used by the named and implied project
  * archive endpoints.
  */
-const doArchive = async({ app, cache, model, orgKey, localProjectName, reporter, res, req }) => {
+const doArchive = async({ app, cache, projectName, reporter, res, req }) => {
   await checkGitHubAPIAccess() // throws HTTP Error on failure
 
   const { keepLocal = false } = req.vars
 
-  const pkgData = await getPackageData({ localProjectName, model, orgKey })
+  const pkgData = await getPackageData({ app, projectName })
 
-  const { githubOrg, projectBaseName, projectFQN } = pkgData
+  const { githubName } = pkgData
   // user may overrid the standard path v but usually won't
   const projectPath = req.vars.projectPath || pkgData.projectPath
 
@@ -34,12 +34,12 @@ const doArchive = async({ app, cache, model, orgKey, localProjectName, reporter,
 
   const octocache = new Octocache({ authToken })
   try {
-    reporter.push(`About to achive ${githubOrg}/${projectBaseName} on GitHub...`)
-    await octocache.request(`PATCH /repos/${githubOrg}/${projectBaseName}`, { archived : true })
+    reporter.push(`About to achive ${githubName} on GitHub...`)
+    await octocache.request(`PATCH /repos/${githubName}`, { archived : true })
     reporter.push('  success.')
   }
   catch (e) {
-    throw createError.BadRequest(`There was a problem archiving '${projectFQN}' on github: ${e.message}`, { cause : e })
+    throw createError.BadRequest(`There was a problem archiving '${projectName}' on github: ${e.message}`, { cause : e })
   }
 
   if (keepLocal !== true) {
@@ -49,16 +49,14 @@ const doArchive = async({ app, cache, model, orgKey, localProjectName, reporter,
       reporter.push('  success.')
     }
     catch (e) {
-      throw createError.InternalServerError(`Project '${projectFQN}' was archived on GitHub, but there was an error removing the local project at '${projectPath}'. Check and address manually.`, { cause : e })
+      throw createError.InternalServerError(`Project '${projectName}' was archived on GitHub, but there was an error removing the local project at '${projectPath}'. Check and address manually.`, { cause : e })
     }
-
-    model.load()
   }
   else {
     reporter.push('Skipping deletion of local project.')
   }
 
-  let msg = reporter.taskReport.join('\n') + '\n\n' + `<em>Archived<rst> '<code>${projectFQN}<rst>' on GitHub.`
+  let msg = reporter.taskReport.join('\n') + '\n\n' + `<em>Archived<rst> '<code>${projectName}<rst>' on GitHub.`
   if (keepLocal !== true) msg += ' <em>Removed local project<rst>.'
 
   httpSmartResponse({ msg, req, res })

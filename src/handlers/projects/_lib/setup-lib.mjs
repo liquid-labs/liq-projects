@@ -1,5 +1,3 @@
-import * as fsPath from 'node:path'
-
 import createError from 'http-errors'
 
 import { determineCurrentBranch, determineLocalMain } from '@liquid-labs/git-toolkit'
@@ -12,20 +10,15 @@ import {
   setupGitHubMilestones
 } from '@liquid-labs/github-toolkit'
 import { httpSmartResponse } from '@liquid-labs/http-smart-response'
-import { getOrgFromKey } from '@liquid-labs/liq-handlers-lib'
-import { LIQ_PLAYGROUND } from '@liquid-labs/liq-defaults'
 
 import { commonProjectPathParameters } from './common-project-path-parameters'
 import { commonProjectSetupParameters } from './common-project-setup-parameters'
-import { GITHUB_REPO_KEY } from './common-constants'
+import { getPackageData } from './get-package-data'
 
 /**
  * Implements shared setup logic for the named and implied project setup endpoints.
  */
-const doSetup = async({ localProjectName, model, orgKey, reporter, req, res }) => {
-  const org = getOrgFromKey({ model, orgKey, res })
-  if (org === false) return
-
+const doSetup = async({ app, projectName, reporter, req, res }) => {
   reporter?.push('Checking GitHub SSH access...')
   checkGitHubSSHAccess({ reporter }) // the check will throw HTTP errors if there's a problem
   reporter?.push('Checking GitHub API access..')
@@ -41,10 +34,8 @@ const doSetup = async({ localProjectName, model, orgKey, reporter, req, res }) =
     unpublished = false
   } = req.vars
 
-  const projectPath = req.vars.projectPath
-    || fsPath.join(LIQ_PLAYGROUND(), orgKey, localProjectName)
-  const githubOrg = org.getSetting(GITHUB_REPO_KEY)
-  const projectFQN = githubOrg + '/' + localProjectName
+  const { githubName: projectFQN, pkgJSON, projectPath: pp } = getPackageData({ app, projectName })
+  const projectPath = req.vars.projectPath || pp
 
   const localMain = determineLocalMain({ projectPath })
   const currentBranch = determineCurrentBranch({ projectPath })
@@ -55,7 +46,7 @@ const doSetup = async({ localProjectName, model, orgKey, reporter, req, res }) =
 
   reporter = reporter?.isolate()
   if (skipLabels !== true) await setupGitHubLabels({ noDeleteLabels, noUpdateLabels, projectFQN, reporter })
-  if (skipMilestones !== true) await setupGitHubMilestones({ model, projectFQN, projectPath, reporter, unpublished })
+  if (skipMilestones !== true) await setupGitHubMilestones({ pkgJSON, projectFQN, projectPath, reporter, unpublished })
   if (noUpdateOriginName !== true) regularizeRemote({ projectPath, reporter })
   if (noUpdateMainBranch !== true) await regularizeMainBranch({ projectFQN, projectPath, reporter })
 

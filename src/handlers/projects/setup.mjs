@@ -1,18 +1,15 @@
 import { doSetup, getSetupEndpointParameters } from './_lib/setup-lib'
 
-const paths = [
-  ['projects', ':orgKey', ':localProjectName', 'setup'],
-  ['orgs', ':orgKey', 'projects', ':localProjectName', 'setup']
-]
+const path = ['projects', ':projectName', 'setup']
 
 const { help, method, parameters } = getSetupEndpointParameters({ workDesc : 'named' })
 
-const func = ({ model, reporter }) => async(req, res) => {
+const func = ({ app, reporter }) => async(req, res) => {
   reporter = reporter.isolate()
 
-  const { localProjectName, orgKey } = req.vars
+  const { projectName } = req.vars
 
-  await doSetup({ localProjectName, model, orgKey, reporter, req, res })
+  await doSetup({ app, projectName, reporter, req, res })
 }
 
 export {
@@ -20,5 +17,5 @@ export {
   help,
   method,
   parameters,
-  paths
+  path
 }

@@ -1,8 +1,6 @@
 import * as fs from 'fs'
-import * as sysPath from 'path'
 
 import { httpSmartResponse } from '@liquid-labs/http-smart-response'
-import { LIQ_PLAYGROUND } from '@liquid-labs/liq-defaults'
 import { updateDeps } from '@liquid-labs/liq-projects-lib'
 
 const method = 'put'
@@ -16,20 +14,20 @@ const parameters = [
   }
 ]
 
-const doUpdate = async({ localProjectName, model, orgKey, reporter, req, res }) => {
+const doUpdate = async({ app, projectName, reporter, req, res }) => {
   const { dryRun } = req.vars
 
-  const localProjectPath = sysPath.join(LIQ_PLAYGROUND(), orgKey, localProjectName)
+  const { projectPath : localProjectPath } = app.ext._liqProjects.playgroundMonitor.getProjectData(projectName)
   if (!fs.existsSync(localProjectPath)) {
-    res.status(404).json({ message : `Did not find expected local checkout for project '${orgKey}/${localProjectName}'.` })
+    res.status(404).json({ message : `Did not find expected local checkout for project '${projectName}'.` })
     return
   }
 
-  const { updated, actions } = updateDeps({ dryRun, localProjectPath, projectName : `${orgKey}/${localProjectName}` })
+  const { updated, actions } = updateDeps({ dryRun, localProjectPath, projectName })
 
   let msg = reporter.taskReport.join('\n')
     + '\n' + actions.join('\n')
-    + `\n\n<bold>${orgKey}/${localProjectName}<rst> <em>`
+    + `\n\n<bold>${projectName}<rst> <em>`
   if (dryRun === true) {
     msg += updated === true
       ? 'no change<rst> (dry run)'

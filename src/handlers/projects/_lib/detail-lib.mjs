@@ -1,4 +1,4 @@
-// TODO: we should do more with this; expose liq-specific info. Right now, we're duplicating playground/projects/get-package
+// TODO: we should do more with this; expose liq-specific info.
 import createError from 'http-errors'
 
 import { httpSmartResponse } from '@liquid-labs/http-smart-response'
@@ -6,13 +6,11 @@ import { httpSmartResponse } from '@liquid-labs/http-smart-response'
 /**
  * Implements detailing a project. Used by the named and implied project detail endpoints.
  */
-const doDetail = ({ localProjectName, model, orgKey, req, res }) => {
-  const projectFQN = orgKey + '/' + localProjectName
+const doDetail = ({ app, projectName, req, res }) => {
+  const projectData = app.ext._liqProjects.playgroundMonitor.getProjectDetail(projectName)
+  if (projectData === undefined) throw createError.NotFound(`No such project '${projectName}'.`)
 
-  const projectData = model.playground.projects[projectFQN]
-  if (projectData === undefined) throw createError.NotFound(`No such project '${projectFQN}'.`)
-
-  httpSmartResponse({ data : projectData, msg : `Retrieved project '${projectFQN}'.`, req, res })
+  httpSmartResponse({ data : projectData, msg : `Retrieved project '${projectName}'.`, req, res })
 }
 
 /**

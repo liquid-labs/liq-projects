@@ -13,17 +13,11 @@ hljs.registerLanguage('javascript', javascript)
 /**
  * Implements documenting a project. Used by the named and implied project detail endpoints.
  */
-const doDocument = async({ model, orgKey, localProjectName, req, res }) => {
-  const { ignoreDocumentationImplementation } = req.vars
-
-  const requireImplements = ignoreDocumentationImplementation === true
-    ? []
-    : ['implements:documentation']
-
-  const pkgData = await getPackageData({ localProjectName, model, orgKey, requireImplements })
+const doDocument = async({ app, projectName, req, res }) => {
+  const pkgData = await getPackageData({ app, projectName })
   // else, we are good to start generating documentation!
 
-  const { projectFQN, projectPath } = pkgData
+  const { projectPath } = pkgData
 
   const pkgSrc = fsPath.join(projectPath, 'src')
   const docPath = fsPath.join(projectPath, 'docs')
@@ -60,7 +54,7 @@ const doDocument = async({ model, orgKey, localProjectName, req, res }) => {
   const indexPath = fsPath.join(docPath, 'index.html')
   let tocContent = `<html>
   <head>
-    <title>${projectFQN}</title>
+    <title>${projectName}</title>
   </head>
     <body>
       <ul>`
@@ -137,13 +131,7 @@ const getDocumentEndpointParameters = ({ workDesc }) => {
 
   const method = 'put'
 
-  const parameters = [
-    {
-      name        : 'ignoreDocumentationImplementation',
-      isBoolean   : true,
-      description : 'If set to true, then a missing <code>implementation:documentation<rst> label will not cause the process to exit.'
-    }
-  ]
+  const parameters = []
   Object.freeze(parameters)
 
   return { help, method, parameters }

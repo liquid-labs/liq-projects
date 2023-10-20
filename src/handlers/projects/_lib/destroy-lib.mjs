@@ -15,7 +15,7 @@ import { getPackageData } from './get-package-data'
  * Implements verifying local status and destroying repositories on GitHub. Used by the named and implied project
  * destroy endpoints.
  */
-const doDestroy = async({ app, cache, localProjectName, model, orgKey, reporter, req, res }) => {
+const doDestroy = async({ app, cache, projectName, reporter, req, res }) => {
   const { confirmed = false, noCopy = false } = req.vars
 
   if (confirmed !== true) {
@@ -24,9 +24,9 @@ const doDestroy = async({ app, cache, localProjectName, model, orgKey, reporter,
 
   await checkGitHubAPIAccess() // throws HTTP Error on failure
 
-  const pkgData = await getPackageData({ localProjectName, model, orgKey })
+  const pkgData = await getPackageData({ app, projectName })
 
-  const { githubOrg, projectBaseName, projectFQN } = pkgData
+  const { githubName, projectFQN } = pkgData
   // user may overrid the standard path v but usually won't
   const projectPath = req.vars.projectPath || pkgData.projectPath
 
@@ -35,8 +35,8 @@ const doDestroy = async({ app, cache, localProjectName, model, orgKey, reporter,
 
   const octocache = new Octocache({ authToken })
   try { // TODO: move to github-toolkit as 'deleteGitHubProject'
-    reporter.push(`About to <em>delete<rst> of <code>${githubOrg}/${projectBaseName}<rst>...`)
-    await octocache.request(`DELETE /repos/${githubOrg}/${projectBaseName}`)
+    reporter.push(`About to <em>delete<rst> of <code>${githubName}<rst>...`)
+    await octocache.request(`DELETE /repos/${githubName}`)
     reporter.push('  success.')
   }
   catch (e) {
@@ -45,7 +45,7 @@ const doDestroy = async({ app, cache, localProjectName, model, orgKey, reporter,
 
   let tmpDir
   if (noCopy !== true) {
-    const tmpPrefix = fsPath.join(os.tmpdir(), orgKey + '-' + localProjectName)
+    const tmpPrefix = fsPath.join(os.tmpdir(), +projectName)
     const fsSep = fsPath.sep
     try {
       reporter.push(`About to copy ${projectFQN} to ${tmpDir}...`)
@@ -71,8 +71,6 @@ const doDestroy = async({ app, cache, localProjectName, model, orgKey, reporter,
   catch (e) {
     throw createError.InternalServerError(`Project '${projectFQN}' was removed from GitHub, but there was an error removing the local project at '${projectPath}'. Check and address manually.`, { cause : e })
   }
-
-  model.load()
 
   let msg = reporter.taskReport.join('\n')
     + '\n\n'

@@ -16,7 +16,7 @@ import { doRelease } from './do-release'
 import { commonProjectPathParameters } from '../../_lib/common-project-path-parameters'
 import { getPackageData } from '../../_lib/get-package-data'
 
-const doActualPublish = ({ originRemote, otp, projectFQN, projectPath, releaseTag, reporter }) => {
+const doActualPublish = ({ originRemote, otp, projectName, projectPath, releaseTag, reporter }) => {
   reporter.push(`Pushing release tag '${releaseTag}' to ${originRemote} remote...`) // TODO: doe
   const pushTagsResult = tryExec(`cd '${projectPath}' && git push ${originRemote} ${releaseTag}`)
   if (pushTagsResult.code !== 0) { throw createError.InternalServerError(`Failed to push version release tag ${releaseTag}: ${pushTagsResult.stderr}`) }
@@ -24,11 +24,11 @@ const doActualPublish = ({ originRemote, otp, projectFQN, projectPath, releaseTa
   reporter.push('Preparing to publish...')
   const pushCmd = `cd '${projectPath}' && npm publish${otp === undefined ? '' : ` --otp=${otp}`}`
   const publishResult = tryExec(pushCmd, { timout : 1500 /* 1.5 sec */ })
-  if (publishResult.code !== 0) { throw createError(`Project '${projectFQN}' preparation succeeded, but was unable to publish to npm; perhaps you need to include the 'otp' option? Stderr: ${publishResult.stderr}`) }
+  if (publishResult.code !== 0) { throw createError(`Project '${projectName}' preparation succeeded, but was unable to publish to npm; perhaps you need to include the 'otp' option? Stderr: ${publishResult.stderr}`) }
   reporter.push('  success.')
 }
 
-const doPublish = async({ app, cache, localProjectName, model, orgKey, reporter, req, res }) => {
+const doPublish = async({ app, cache, projectName, reporter, req, res }) => {
   reporter.reset()
   reporter = reporter.isolate()
 
@@ -45,25 +45,23 @@ const doPublish = async({ app, cache, localProjectName, model, orgKey, reporter,
     summary
   } = req.vars
 
-  const org = model.orgs[orgKey]
+  const pkgData = await getPackageData({ app, projectName })
 
-  const pkgData = await getPackageData({ localProjectName, model, orgKey })
-
-  const { packageSpec, projectFQN, projectPath } = pkgData
+  const { pkgJSON, projectPath } = pkgData
   const [originRemote, mainBranch] = determineOriginAndMain({ projectPath, reporter })
 
-  const publishOnPrepare = org.getSetting(`projects.${projectFQN}.releases.PUBLISH_FROM`)
-    || org.getSetting('projects.releases.PUBLISH_FROM')
+  const publishOnPrepare = pkgJSON?.liq?.PUBLISH_FROM || 'main-branch'
+
   if (publishOnPrepare !== undefined && publishOnPrepare !== 'release-branch' && publishOnPrepare !== 'main-branch') {
     throw createError.BadRequest(`Invalid value for 'PUBLISH_FROM' '${publishOnPrepare}'; must be one of 'release-branch' or 'main-branch'.`)
   }
 
   if (noPublish === false && publish === undefined && publishOnPrepare === undefined) {
-    throw createError.BadRequest("Must specify endpoint parameter 'publish', 'noPublish', or set 'PUBLISH_FROM' for the project or organization.")
+    throw createError.BadRequest("Must specify endpoint parameter 'publish', 'noPublish', or set 'liq.PUBLISH_FROM' (in 'package.json') for the project.")
   }
 
   // TODO: should be 'org.getSettings(`npm.${npmOrg}.OTP_REQUIRED`)' or similar.
-  if (releaseOnly !== true && otp === undefined && app.ext.localSettings.NPM?.['otp-required'] === true) {
+  if (releaseOnly !== true && otp === undefined && pkgJSON?.liq?.npm.PUBLISH_OTP_REQUIRED === true) {
     const interrogationBundles = [
       {
         title   : 'One-time-password security verification',
@@ -81,7 +79,7 @@ const doPublish = async({ app, cache, localProjectName, model, orgKey, reporter,
     return
   }
 
-  const currVer = packageSpec.version
+  const currVer = pkgJSON.version
 
   if (releaseOnly === true) {
     const releaseMsg = await doRelease({
@@ -89,8 +87,7 @@ const doPublish = async({ app, cache, localProjectName, model, orgKey, reporter,
       cache,
       mainBranch,
       name,
-      org,
-      projectFQN,
+      projectName,
       releaseVersion : currVer,
       reporter,
       summary
@@ -121,7 +118,7 @@ const doPublish = async({ app, cache, localProjectName, model, orgKey, reporter,
     dirtyOK,
     mainBranch,
     originRemote,
-    packageSpec,
+    pkgJSON,
     projectPath,
     releaseBranch,
     reporter
@@ -160,7 +157,7 @@ const doPublish = async({ app, cache, localProjectName, model, orgKey, reporter,
   else reporter.push('Version already updated')
 
   if (publish === 'release-branch' || (publishOnPrepare === 'release-branch')) {
-    doActualPublish({ originRemote, otp, projectFQN, projectPath, releaseTag, reporter })
+    doActualPublish({ originRemote, otp, projectName, projectPath, releaseTag, reporter })
   }
 
   reporter.push(`Merging release branch '${releaseBranch}' to '${mainBranch}'...`)
@@ -177,20 +174,17 @@ const doPublish = async({ app, cache, localProjectName, model, orgKey, reporter,
   if (pushResult.code !== 0) { throw createError.InternalServerError(`Failed to push merged '${mainBranch}' to remote '${originRemote}'; push manually.`) }
 
   if (publish === 'main-branch' || (publishOnPrepare === 'main-branch')) {
-    doActualPublish({ originRemote, otp, projectFQN, projectPath, releaseTag, reporter })
+    doActualPublish({ originRemote, otp, projectName, projectPath, releaseTag, reporter })
   }
 
   /* TODO: open browser to
   if (noBrowser === false) {
     const releaseAnchor = `release-v${nextVer}`
-    const browseResult = shell.exec(`hub browse '${projectFQN}' 'blob/${main}/CHANGELOG.md#${releaseAnchor}'`)
+    const browseResult = shell.exec(`hub browse '${projectName}' 'blob/${main}/CHANGELOG.md#${releaseAnchor}'`)
     if (browseResult.code !== 0)
-      throw createError.InternalServerError(`Release succeded, but unable to browse to CHANGELOG.md for ${projectFQN}.`)
+      throw createError.InternalServerError(`Release succeded, but unable to browse to CHANGELOG.md for ${projectName}.`)
   }
   */
-
-  reporter.push('Updating internal model...')
-  model.load()
 
   const releaseMsg = noRelease === true
     ? ''
@@ -199,8 +193,7 @@ const doPublish = async({ app, cache, localProjectName, model, orgKey, reporter,
       cache,
       mainBranch,
       name,
-      org,
-      projectFQN,
+      projectName,
       releaseVersion : nextVer,
       reporter,
       summary
@@ -208,8 +201,8 @@ const doPublish = async({ app, cache, localProjectName, model, orgKey, reporter,
 
   const msg = reporter.taskReport.join('\n') + '\n\n'
     + (publish !== undefined || publishOnPrepare !== undefined
-      ? `<bold>Published<rst> project <em>${projectFQN}<rst>.`
-      : `<bold>Prepared<rst> project <em>${projectFQN}<rst>; publish manually.`)
+      ? `<bold>Published<rst> project <em>${projectName}<rst>.`
+      : `<bold>Prepared<rst> project <em>${projectName}<rst>; publish manually.`)
     + ' ' + releaseMsg
 
   httpSmartResponse({ msg, req, res })
@@ -295,7 +288,7 @@ const verifyReadyForPublish = ({
   dirtyOK,
   mainBranch,
   originRemote,
-  packageSpec,
+  pkgJSON,
   projectPath,
   releaseBranch,
   reporter
@@ -312,7 +305,7 @@ const verifyReadyForPublish = ({
   runQA({
     msgFail     : 'Project must pass QA prior to release.',
     msgNoScript : "You must define a 'qa' script to be run prior to release.",
-    packageSpec,
+    pkgJSON,
     projectPath
   })
 }
