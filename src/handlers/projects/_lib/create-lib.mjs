@@ -209,7 +209,7 @@ const doCreate = async({ reporter, req, res }) => {
   }
   targetDirBits.push(basename)
   const targetDir = fsPath.join(...targetDirBits)
-  await fs.mkdir(fsPath.dirname(targetDir), { recursive: true })
+  await fs.mkdir(fsPath.dirname(targetDir), { recursive : true })
   await fs.rename(stagingDir, targetDir)
 
   res.send(reporter.taskReport.join('\n')).end()

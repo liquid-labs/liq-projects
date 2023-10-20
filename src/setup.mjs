@@ -8,7 +8,7 @@ import { LIQ_PLAYGROUND } from '@liquid-labs/liq-defaults'
 import { PlaygroundMonitor } from '@liquid-labs/playground-monitor'
 
 const setup = ({ app, reporter }) => {
-  setupCredentials({ credentialsDB: app.ext.credentialsDB })
+  setupCredentials({ credentialsDB : app.ext.credentialsDB })
   setupPlayground({ app })
   setupPathResolvers({ app })
   // installProjectPlugins({ app, model, reporter })

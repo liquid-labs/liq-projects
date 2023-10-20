@@ -20,7 +20,9 @@ import { getGitHubOrgAndProject } from '@liquid-labs/github-toolkit'
  * - `projectPath`: the absolute path to the project on local disk
  */
 const getPackageData = async({ app, projectName }) => {
-  const { pkgJSON, projectPath } = app.ext._liqProjects.playgroundMonitor.getProjectData(projectName)?.pkgJSON || {}
+  console.log('getting projectName:', projectName) // DEBUG
+  const { pkgJSON, projectPath } = app.ext._liqProjects.playgroundMonitor.getProjectData(projectName) || {}
+  console.log('getPackageData pkgJSON:', pkgJSON) // DEBUG
   if (pkgJSON === undefined) {
     throw createError.NotFound(`No such project '${projectName}' found in state model.`)
   }
