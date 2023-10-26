@@ -50,6 +50,7 @@ const doPublish = async({ app, cache, projectName, reporter, req, res }) => {
   const { pkgJSON, projectPath } = pkgData
   const [originRemote, mainBranch] = determineOriginAndMain({ projectPath, reporter })
 
+  // TODO: read from org settings if not defined in pkgJSON
   const publishOnPrepare = pkgJSON?.liq?.PUBLISH_FROM || 'main-branch'
 
   if (publishOnPrepare !== undefined && publishOnPrepare !== 'release-branch' && publishOnPrepare !== 'main-branch') {
@@ -61,7 +62,7 @@ const doPublish = async({ app, cache, projectName, reporter, req, res }) => {
   }
 
   // TODO: should be 'org.getSettings(`npm.${npmOrg}.OTP_REQUIRED`)' or similar.
-  if (releaseOnly !== true && otp === undefined && pkgJSON?.liq?.npm.PUBLISH_OTP_REQUIRED === true) {
+  if (releaseOnly !== true && otp === undefined && pkgJSON?.liq?.npm?.PUBLISH_OTP_REQUIRED === true) {
     const interrogationBundles = [
       {
         title   : 'One-time-password security verification',

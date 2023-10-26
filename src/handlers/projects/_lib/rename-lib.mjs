@@ -58,23 +58,18 @@ const getRenameEndpointParameters = ({ workDesc }) => {
  * Implements common rename logic for the named and implied rename endpoints.
  */
 const doRename = async({ app, projectName, reporter, req, res }) => {
-  console.log('A') // DEBUG
   await checkGitHubAPIAccess({ reporter }) // throws on failure
-  console.log('B') // DEBUG
 
   const { newName, noRenameDir = false, noRenameGitHubProject = false } = req.vars
-  console.log('newName:', newName, 'req:', req) // DEBUG
 
   let pkgData
   let origLocale = true
   try {
     reporter.push('Checking original project location...')
-    console.log('projectName:', projectName) // DEBUG
     pkgData = await getPackageData({ app, projectName })
     reporter.push('  Found.')
   }
   catch (e) {
-    console.log('huh??????') // DEBUG
     if (e.statusCode === 404 && req.vars.projectPath === undefined) {
       origLocale = false
     }
@@ -99,16 +94,13 @@ const doRename = async({ app, projectName, reporter, req, res }) => {
   let projectPath = req.vars.projectPath || pkgData.projectPath
   const { githubOrg, githubName, pkgJSON } = pkgData
   const { basename: newBasename/*, org: newOrg */ } = await getPackageOrgAndBasename({ pkgName : newName })
-  // const { basename: origBasename, org: origOrg } = getPackageOrgAndBasename({ pkgName: pkgJSON.name })
 
   const newGitHubName = githubOrg + '/' + newBasename
-  console.log('newName:', newName, 'newGitHubName:', newGitHubName) // DEBUG
 
   if (noRenameDir === true) reporter.push('Skipping dir rename per <code>noRenameDir<rst>.')
   else if (origLocale === false) reporter.push('Looks like dir ha already been renamed; skipping.')
   else {
     const newProjectPath = fsPath.join(LIQ_PLAYGROUND(), newName)
-    console.log('renaming ' + projectPath + ' -> ' + newProjectPath) // DEBUG
     reporter.push(`Moving project from <code>${projectPath}<rst> to <code>${newProjectPath}<rst>...`)
     await fs.rename(projectPath, newProjectPath)
     projectPath = newProjectPath
@@ -120,13 +112,12 @@ const doRename = async({ app, projectName, reporter, req, res }) => {
   }
   else {
     const projCheckResult =
-      shell.exec(`gh api -H "Accept: application/vnd.github+json" /repos/${newGitHubName}`)
+      shell.exec(`hub api -H "Accept: application/vnd.github+json" /repos/${newGitHubName}`)
     if (projCheckResult.code === 0) {
       reporter.push(`It appears '${githubName}' is already renamed in GitHub to '${newGitHubName}'.`)
     }
     else {
       reporter.push(`Updating GitHub project name from ${githubName} to ${newGitHubName}...`)
-      console.log('newBasename:', newBasename) // DEBUG
       const renameResult = shell.exec(`hub api --method PATCH -H "Accept: application/vnd.github+json" /repos/${githubName} -f name='${newBasename}'`)
       if (renameResult.code !== 0) {
         throw new Error('There was a problem renaming the remote project name. Update manually.')

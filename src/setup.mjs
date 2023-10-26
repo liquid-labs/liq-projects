@@ -7,9 +7,9 @@ import { types } from '@liquid-labs/liq-credentials-db'
 import { LIQ_PLAYGROUND } from '@liquid-labs/liq-defaults'
 import { PlaygroundMonitor } from '@liquid-labs/playground-monitor'
 
-const setup = ({ app, reporter }) => {
+const setup = async({ app, reporter }) => {
   setupCredentials({ credentialsDB : app.ext.credentialsDB })
-  setupPlayground({ app })
+  await setupPlayground({ app })
   setupPathResolvers({ app })
   // installProjectPlugins({ app, model, reporter })
 }
@@ -65,9 +65,11 @@ const setupPathResolvers = ({ app }) => {
   }
 }
 
-const setupPlayground = ({ app }) => {
+const setupPlayground = async({ app }) => {
   const playgroundMonitor = new PlaygroundMonitor({ root : LIQ_PLAYGROUND() })
-  app.ext._liqProjects = Object.assign({}, app.ext_liqProjects, { playgroundMonitor })
+  await playgroundMonitor.refreshProjects()
+  // works wether or not app.ext._liqProjects is defined or not
+  app.ext._liqProjects = Object.assign({}, app.ext._liqProjects, { playgroundMonitor })
   app.ext.teardownMethods.push(async() => await playgroundMonitor.close())
 }
 

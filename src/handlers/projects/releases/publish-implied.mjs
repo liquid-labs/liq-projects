@@ -7,7 +7,7 @@ const { help, method, parameters } = getPublishEndpointParams({ workDesc : 'impl
 const path = ['projects', 'releases', 'publish']
 
 const func = ({ app, cache, reporter }) => async(req, res) => {
-  reporter.isolote()
+  reporter.isolate()
 
   const { name: projectName } = await getImpliedPackageJSON({ callDesc : 'release publish', req })
 

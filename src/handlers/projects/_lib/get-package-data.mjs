@@ -1,6 +1,6 @@
 import createError from 'http-errors'
 
-import { getGitHubOrgAndProject } from '@liquid-labs/github-toolkit'
+import { getGitHubOrgAndProjectBasename } from '@liquid-labs/github-toolkit'
 
 /**
  * Retrieve the `package.json` data while extracting commonly useful bits.
@@ -19,20 +19,23 @@ import { getGitHubOrgAndProject } from '@liquid-labs/github-toolkit'
  * - `pkgJSON`: the 'package.json' contents (as JSON object)`
  * - `projectPath`: the absolute path to the project on local disk
  */
-const getPackageData = async({ app, projectName }) => {
-  console.log('getting projectName:', projectName) // DEBUG
+const getPackageData = async({ app, projectName, noThrow }) => {
   const { pkgJSON, projectPath } = app.ext._liqProjects.playgroundMonitor.getProjectData(projectName) || {}
-  console.log('getPackageData pkgJSON:', pkgJSON) // DEBUG
   if (pkgJSON === undefined) {
-    throw createError.NotFound(`No such project '${projectName}' found in state model.`)
+    if (noThrow === true) {
+      return undefined
+    }
+    else {
+      throw createError.NotFound(`No such project '${projectName}' found in state model.`)
+    }
   }
   // else we have what looks like a project
 
-  const { org: githubOrg, project } = getGitHubOrgAndProject({ packageJSON : pkgJSON })
-  const githubName = githubOrg + '/' + project
+  const { org: githubOrg, projectBasename } = getGitHubOrgAndProjectBasename({ packageJSON : pkgJSON })
+  const githubName = githubOrg + '/' + projectBasename
 
   return {
-    githubBasename : project,
+    githubBasename : projectBasename,
     githubName,
     githubOrg,
     pkgJSON,

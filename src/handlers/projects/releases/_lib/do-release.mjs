@@ -9,9 +9,9 @@ const doRelease = async({ app, cache, mainBranch, name, projectName, releaseVers
   reporter.push('Creating GitHub release...')
 
   const credDB = app.ext.credentialsDB
-  const authToken = credDB.getToken('GITHUB_API') // TODO: check we have access before doinganything...
+  const authToken = await credDB.getToken('GITHUB_API') // TODO: check we have access before doinganything...
 
-  const { githubBasename, githubName, githubOrg: githubOwner } = getPackageData({ app, projectName })
+  const { githubBasename, githubName, githubOrg: githubOwner } = await getPackageData({ app, projectName })
 
   const prerelease = version.prerelease(releaseVersion) !== null
 
