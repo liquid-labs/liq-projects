@@ -7,6 +7,8 @@ import shell from 'shelljs'
 import { determineOriginAndMain } from '@liquid-labs/git-toolkit'
 import { checkGitHubAPIAccess } from '@liquid-labs/github-toolkit'
 import { httpSmartResponse } from '@liquid-labs/http-smart-response'
+import { LIQ_PLAYGROUND } from '@liquid-labs/liq-defaults'
+import { getPackageOrgAndBasename } from '@liquid-labs/npm-toolkit'
 
 import { commonProjectPathParameters } from './common-project-path-parameters'
 import { getPackageData } from './get-package-data'
@@ -30,9 +32,9 @@ const getRenameEndpointParameters = ({ workDesc }) => {
 
   const parameters = [
     {
-      name        : 'newBaseName',
+      name        : 'newName',
       isRequried  : true,
-      description : 'The new base package name.'
+      description : 'The new full package name.'
     },
     {
       name        : 'noRenameDir',
@@ -55,16 +57,16 @@ const getRenameEndpointParameters = ({ workDesc }) => {
 /**
  * Implements common rename logic for the named and implied rename endpoints.
  */
-const doRename = async({ localProjectName, model, orgKey, reporter, req, res }) => {
+const doRename = async({ app, projectName, reporter, req, res }) => {
   await checkGitHubAPIAccess({ reporter }) // throws on failure
 
-  const { newBaseName, noRenameDir = false, noRenameGitHubProject = false } = req.vars
+  const { newName, noRenameDir = false, noRenameGitHubProject = false } = req.vars
 
   let pkgData
   let origLocale = true
   try {
     reporter.push('Checking original project location...')
-    pkgData = await getPackageData({ localProjectName, model, orgKey })
+    pkgData = await getPackageData({ app, projectName })
     reporter.push('  Found.')
   }
   catch (e) {
@@ -77,69 +79,75 @@ const doRename = async({ localProjectName, model, orgKey, reporter, req, res }) 
   if (origLocale === false) {
     try {
       reporter.push('Checking new project location (for partial rename)...')
-      pkgData = await getPackageData({ orgKey, localProjectName : newBaseName })
+      pkgData = await getPackageData({ app, projectName : newName })
     }
     catch (e) {
       if (e.statusCode === 404) {
-        throw createError.NotFound(`Could not find package at under default locations for either original ('${localProjectName}') or new ('${newBaseName}') name.`, { cause : e })
+        throw createError.NotFound(`Could not find package at under default locations for either original ('${projectName}') or new ('${newName}') name.`, { cause : e })
       }
       else throw e
     }
     // then we definietly found a package definition in the new place.
   }
 
-  // user may overrid the standard path v but usually won't
+  // user may override the standard path v but usually won't
   let projectPath = req.vars.projectPath || pkgData.projectPath
-  const { githubOrg, packageSpec, projectFQN } = pkgData
+  const { githubOrg, githubName, pkgJSON } = pkgData
+  const { basename: newBasename/*, org: newOrg */ } = await getPackageOrgAndBasename({ pkgName : newName })
+
+  const newGitHubName = githubOrg + '/' + newBasename
 
   if (noRenameDir === true) reporter.push('Skipping dir rename per <code>noRenameDir<rst>.')
   else if (origLocale === false) reporter.push('Looks like dir ha already been renamed; skipping.')
   else {
-    const newProjectPath = fsPath.join(fsPath.dirname(projectPath), newBaseName)
+    const newProjectPath = fsPath.join(LIQ_PLAYGROUND(), newName)
     reporter.push(`Moving project from <code>${projectPath}<rst> to <code>${newProjectPath}<rst>...`)
     await fs.rename(projectPath, newProjectPath)
     projectPath = newProjectPath
   }
   // note 'projectPath' now points to the new location, if moved
 
-  if (noRenameGitHubProject === true) { reporter.push('Skipping GitHub project rename per <code>noRenameGitHubProject<rst>.') }
+  if (noRenameGitHubProject === true) {
+    reporter.push('Skipping GitHub project rename per <code>noRenameGitHubProject<rst>.')
+  }
   else {
     const projCheckResult =
-      shell.exec(`gh api -H "Accept: application/vnd.github+json" /repos/${githubOrg}/${newBaseName}`)
-    if (projCheckResult.code === 0) { reporter.push(`It appears '${githubOrg}/${localProjectName}' is already renamed in GitHub to '${newBaseName}'.`) }
+      shell.exec(`hub api -H "Accept: application/vnd.github+json" /repos/${newGitHubName}`)
+    if (projCheckResult.code === 0) {
+      reporter.push(`It appears '${githubName}' is already renamed in GitHub to '${newGitHubName}'.`)
+    }
     else {
-      reporter.push(`Updating GitHub project name from ${localProjectName} to ${newBaseName}...`)
-      const renameResult = shell.exec(`hub api --method PATCH -H "Accept: application/vnd.github+json" /repos/${projectFQN} -f name='${newBaseName}'`)
-      if (renameResult.code !== 0) { throw new Error('There was a problem renaming the remote project name. Update manually.') }
+      reporter.push(`Updating GitHub project name from ${githubName} to ${newGitHubName}...`)
+      const renameResult = shell.exec(`hub api --method PATCH -H "Accept: application/vnd.github+json" /repos/${githubName} -f name='${newBasename}'`)
+      if (renameResult.code !== 0) {
+        throw new Error('There was a problem renaming the remote project name. Update manually.')
+      }
     }
   }
 
   const [originRemote] = determineOriginAndMain({ projectPath })
-  const newURL = `git@github.com:${githubOrg}/${newBaseName}.git`
+  const newURL = `git@github.com:${newGitHubName}.git`
   reporter.push(`Updating origin remote URL to ${newURL}...`)
-  const urlResult = shell.exec(`cd ${projectPath} && git remote set-url ${originRemote} ${newURL}`)
+  const urlResult = shell.exec(`cd '${projectPath}' && git remote set-url ${originRemote} ${newURL}`)
   if (urlResult.code !== 0) throw new Error(`There was a problem updating 'origin' remote URL to ${newURL}`)
 
-  const newFQN = `${githubOrg}/${newBaseName}`
-  packageSpec.name = `@${newFQN}`
-  const repositoryURL = packageSpec.repository?.url || packageSpec.repository
-  packageSpec.repository = {
-    url  : repositoryURL.replace(new RegExp(localProjectName + '\\.git$'), newBaseName + '.git'),
+  pkgJSON.name = newName
+  const repositoryURL = pkgJSON.repository?.url || pkgJSON.repository
+  pkgJSON.repository = {
+    url  : repositoryURL.replace(new RegExp(githubName + '\\.git$'), newGitHubName + '.git'),
     type : 'git'
   }
-  packageSpec.bugs.url = packageSpec.bugs.url.replace(new RegExp(localProjectName + '/issues'), newBaseName + '/issues')
-  packageSpec.homepage = packageSpec.homepage.replace(new RegExp(localProjectName + '#readme'), newBaseName + '#readme')
-  if (packageSpec.main !== undefined) {
-    packageSpec.main = packageSpec.main.replace(new RegExp(localProjectName + '.js'), newBaseName + '.js')
+  pkgJSON.bugs.url = pkgJSON.bugs.url.replace(new RegExp(githubName + '/issues'), newGitHubName + '/issues')
+  pkgJSON.homepage = pkgJSON.homepage.replace(new RegExp(githubName + '#readme'), newGitHubName + '#readme')
+  if (pkgJSON.main !== undefined) {
+    pkgJSON.main = pkgJSON.main.replace(new RegExp(githubName + '.js'), newGitHubName + '.js')
   }
   const pkgPath = fsPath.join(projectPath, 'package.json')
-  reporter.push(`Updating <code>${pkgPath}<rst> with new project name '${newFQN}`)
-  await fs.writeFile(pkgPath, JSON.stringify(packageSpec, null, '  '))
-
-  model.load()
+  reporter.push(`Updating <code>${pkgPath}<rst> with new project name '${newName}`)
+  await fs.writeFile(pkgPath, JSON.stringify(pkgJSON, null, '  '))
 
   const msg = reporter.taskReport.join('\n') + '\n\n'
-    + `<em>Renamed<rst> <code>${projectFQN}<rst> to <code>${newFQN}<rst>.`
+    + `<em>Renamed<rst> <code>${projectName}<rst> to <code>${newName}<rst>.`
   httpSmartResponse({ msg, req, res })
 }
 

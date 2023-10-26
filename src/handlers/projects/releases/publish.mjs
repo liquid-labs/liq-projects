@@ -2,15 +2,12 @@ import { doPublish, getPublishEndpointParams } from './_lib/publish-lib'
 
 const { help, method, parameters } = getPublishEndpointParams({ workDesc : 'indicated' })
 
-const paths = [
-  ['projects', ':orgKey', ':localProjectName', 'releases', 'publish'],
-  ['orgs', ':orgKey', 'projects', ':localProjectName', 'releases', 'publish']
-]
+const path = ['projects', ':projectName', 'releases', 'publish']
 
 const func = ({ app, cache, model, reporter }) => async(req, res) => {
-  const { localProjectName, orgKey } = req.vars
+  const { projectName } = req.vars
 
-  await doPublish({ app, cache, localProjectName, model, orgKey, reporter, req, res })
+  await doPublish({ app, cache, projectName, reporter, req, res })
 }
 
 export {
@@ -18,5 +15,5 @@ export {
   help,
   method,
   parameters,
-  paths
+  path
 }

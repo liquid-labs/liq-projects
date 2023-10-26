@@ -1,6 +1,4 @@
-import createError from 'http-errors'
-
-import { determineImpliedProject } from '@liquid-labs/liq-projects-lib'
+import { getImpliedPackageJSON } from '@liquid-labs/liq-projects-lib'
 
 import { doDocument, getDocumentEndpointParameters } from './_lib/document-lib'
 
@@ -8,16 +6,12 @@ const path = ['projects', 'document']
 
 const { help, method, parameters } = getDocumentEndpointParameters({ workDesc : 'implied' })
 
-const func = ({ model, reporter }) => async(req, res) => {
+const func = ({ app, reporter }) => async(req, res) => {
   reporter = reporter.isolate()
 
-  const cwd = req.get('X-CWD')
-  if (cwd === undefined) {
-    throw createError.BadRequest("Called 'projects document' with implied work, but 'X-CWD' header not found.")
-  }
-  const [orgKey, localProjectName] = determineImpliedProject({ currDir : cwd }).split('/')
+  const { name: projectName } = await getImpliedPackageJSON({ callDesc : 'project document', req })
 
-  await doDocument({ model, orgKey, localProjectName, req, res })
+  await doDocument({ app, projectName, req, res })
 }
 
 export {

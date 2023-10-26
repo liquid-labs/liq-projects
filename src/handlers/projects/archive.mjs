@@ -2,17 +2,14 @@ import { doArchive, getArchiveEndpointParameters } from './_lib/archive-lib'
 
 const { help, method, parameters } = getArchiveEndpointParameters({ workDesc : 'named' })
 
-const paths = [
-  ['projects', ':orgKey', ':localProjectName', 'archive'],
-  ['orgs', ':orgKey', 'projects', ':localProjectName', 'archive']
-]
+const path = ['projects', ':projectName', 'archive']
 
-const func = ({ app, cache, model, reporter }) => async(req, res) => {
+const func = ({ app, reporter }) => async(req, res) => {
   reporter = reporter.isolate()
 
-  const { localProjectName, orgKey } = req.vars
+  const { projectName } = req.vars
 
-  await doArchive({ app, cache, model, orgKey, localProjectName, reporter, res, req })
+  await doArchive({ app, projectName, reporter, res, req })
 }
 
 export {
@@ -20,5 +17,5 @@ export {
   func,
   method,
   parameters,
-  paths
+  path
 }

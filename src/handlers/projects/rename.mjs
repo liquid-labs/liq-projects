@@ -1,18 +1,15 @@
 import { doRename, getRenameEndpointParameters } from './_lib/rename-lib'
 
-const paths = [
-  ['projects', ':orgKey', ':localProjectName', 'rename'],
-  ['orgs', ':orgKey', 'projects', ':localProjectName', 'rename']
-]
+const path = ['projects', ':projectName', 'rename']
 
 const { help, method, parameters } = getRenameEndpointParameters({ workDesc : 'named' })
 
-const func = ({ model, reporter }) => async(req, res) => {
+const func = ({ app, reporter }) => async(req, res) => {
   reporter = reporter.isolate()
 
-  const { localProjectName, orgKey } = req.vars
+  const { projectName } = req.vars
 
-  await doRename({ localProjectName, model, orgKey, reporter, req, res })
+  await doRename({ app, projectName, reporter, req, res })
 }
 
 export {
@@ -20,5 +17,5 @@ export {
   help,
   method,
   parameters,
-  paths
+  path
 }

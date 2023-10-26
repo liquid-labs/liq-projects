@@ -1,18 +1,15 @@
 import { doDocument, getDocumentEndpointParameters } from './_lib/document-lib'
 
-const paths = [
-  ['projects', ':orgKey', ':localProjectName', 'document'],
-  ['orgs', ':orgKey', 'projects', ':localProjectName', 'document']
-]
+const path = ['projects', ':projectName', 'document']
 
 const { help, method, parameters } = getDocumentEndpointParameters({ workDesc : 'named' })
 
-const func = ({ model, reporter }) => async(req, res) => {
+const func = ({ app, reporter }) => async(req, res) => {
   reporter = reporter.isolate()
 
-  const { localProjectName, orgKey } = req.vars
+  const { projectName } = req.vars
 
-  await doDocument({ model, orgKey, localProjectName, req, res })
+  await doDocument({ app, projectName, req, res })
 }
 
 export {
@@ -20,5 +17,5 @@ export {
   help,
   method,
   parameters,
-  paths
+  path
 }

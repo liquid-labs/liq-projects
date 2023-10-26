@@ -1,19 +1,16 @@
-// TODO: we should do more with this; expose liq-specific info. Right now, we're duplicating playground/projects/get-package
+// TODO: we should do more with this; expose liq-specific info.
 import { doDetail, getDetailEndpointParameters } from './_lib/detail-lib'
 
-const paths = [
-  ['projects', ':orgKey', ':localProjectName', 'detail'],
-  ['orgs', ':orgKey', 'projects', ':localProjectName', 'detail']
-]
+const path = ['projects', ':projectName', 'detail']
 
 const { help, method, parameters } = getDetailEndpointParameters({ workDesc : 'named' })
 
-const func = ({ model, reporter }) => async(req, res) => {
+const func = ({ app, reporter }) => async(req, res) => {
   reporter = reporter.isolate()
 
-  const { localProjectName, orgKey } = req.vars
+  const { projectName } = req.vars
 
-  doDetail({ localProjectName, model, orgKey, req, res })
+  doDetail({ app, projectName, req, res })
 }
 
 export {
@@ -21,5 +18,5 @@ export {
   help,
   method,
   parameters,
-  paths
+  path
 }
