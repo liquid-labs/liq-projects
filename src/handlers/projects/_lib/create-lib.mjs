@@ -118,7 +118,7 @@ const doCreate = async({ reporter, req, res }) => {
     const pkgLicense = license || DEFAULT_LICENSE
 
     packageJSON.name = newProjectName
-    packageJSON.main = `dist/${newProjectName}.js`
+    packageJSON.main = `dist/${basename}.js`
     packageJSON.version = version
     packageJSON.repository = repoURL
     packageJSON.bugs = { url : bugsURL }
