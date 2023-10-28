@@ -53,7 +53,13 @@ describe('project lifecyle', () => {
         }
       }
 
-      await doCreate({ reporter : reporterMock, req : reqMock, res : resMock() })
+      const appMock = {
+        ext : {
+          serverHome : playgroundDir
+        }
+      }
+
+      await doCreate({ app : appMock, reporter : reporterMock, req : reqMock, res : resMock() })
     }, 5 * 60 * 1000) // give it 5 minutes
 
     test('creates a local repository in the playground', async() => {

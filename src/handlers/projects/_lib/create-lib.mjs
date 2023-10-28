@@ -17,7 +17,7 @@ import { getPackageOrgAndBasename } from '@liquid-labs/npm-toolkit'
 import { commonProjectSetupParameters } from './common-project-setup-parameters'
 import { DEFAULT_LICENSE, DEFAULT_VERSION } from './common-constants'
 
-const doCreate = async({ reporter, req, res }) => {
+const doCreate = async({ app, reporter, req, res }) => {
   const {
     description,
     license,

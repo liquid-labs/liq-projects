@@ -4,10 +4,10 @@ const { help, method, parameters } = getCreateEndpointParameters({ workDesc : 'n
 
 const path = ['projects', 'create']
 
-const func = ({ reporter }) => async(req, res) => {
+const func = ({ app, reporter }) => async(req, res) => {
   reporter = reporter.isolate()
 
-  await doCreate({ reporter, res, req })
+  await doCreate({ app, reporter, res, req })
 }
 
 export {
