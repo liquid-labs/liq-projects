@@ -1,4 +1,6 @@
-import { getImpliedPackageJSON } from '@liquid-labs/npm-toolkit'
+import createError from 'http-errors'
+
+import { getPackageJSON } from '@liquid-labs/npm-toolkit'
 
 import { doArchive, getArchiveEndpointParameters } from './_lib/archive-lib'
 
@@ -6,12 +8,17 @@ const { help, method, parameters } = getArchiveEndpointParameters({ workDesc : '
 
 const path = ['projects', 'archive']
 
-const func = ({ app, cache, reporter }) => async(req, res) => {
+const func = ({ app, reporter }) => async(req, res) => {
   reporter = reporter.isolate()
 
-  const { name: projectName } = await getImpliedPackageJSON({ callDesc : 'project archive', req })
+  const cwd = req.get('X-CWD')
+  if (cwd === undefined) {
+    throw createError.BadRequest("Called 'project archive' with implied work, but 'X-CWD' header not found.")
+  }
 
-  await doArchive({ app, cache, projectName, reporter, res, req })
+  const { name: projectName } = await getPackageJSON({ pkgDir : cwd })
+
+  await doArchive({ app, projectName, reporter, res, req })
 }
 
 export {

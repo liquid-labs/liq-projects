@@ -13,7 +13,7 @@ hljs.registerLanguage('javascript', javascript)
 /**
  * Implements documenting a project. Used by the named and implied project detail endpoints.
  */
-const doDocument = async({ app, projectName, req, res }) => {
+const doDocument = async({ app, projectName, reporter, req, res }) => {
   const pkgData = await getPackageData({ app, projectName })
   // else, we are good to start generating documentation!
 
@@ -22,15 +22,20 @@ const doDocument = async({ app, projectName, req, res }) => {
   const pkgSrc = fsPath.join(projectPath, 'src')
   const docPath = fsPath.join(projectPath, 'docs')
 
+  reporter.log(`Building docs from ${pkgSrc}...`)
+
   const pkgSrcLength = pkgSrc.length
   const sourceFiles = await getFiles({ dir : pkgSrc, reName : '.(?:js|mjs)$' })
   const dirs = {}
 
-  await fs.rm(docPath, { recursive : true })
+  reporter.log(`Refreshing ${docPath}...`)
+  await fs.rm(docPath, { force : true, recursive : true })
+  await fs.mkdir(docPath, { recursive : true })
 
   const tocFiles = []
 
   await Promise.all(sourceFiles.map(async(file) => {
+    reporter.log(`Precossing ${file}...`)
     const fileContents = await fs.readFile(file, { encoding : 'utf8' })
     const pkgRelPath = file.slice(pkgSrcLength)
     const pkgRelDoc = pkgRelPath + '.html' // so we end up with file names like 'library.js.html'
