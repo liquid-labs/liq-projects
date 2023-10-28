@@ -7,7 +7,7 @@ import { httpSmartResponse } from '@liquid-labs/http-smart-response'
  * Implements detailing a project. Used by the named and implied project detail endpoints.
  */
 const doDetail = ({ app, projectName, req, res }) => {
-  const projectData = app.ext._liqProjects.playgroundMonitor.getProjectDetail(projectName)
+  const projectData = app.ext._liqProjects.playgroundMonitor.getProjectData(projectName)
   if (projectData === undefined) throw createError.NotFound(`No such project '${projectName}'.`)
 
   httpSmartResponse({ data : projectData, msg : `Retrieved project '${projectName}'.`, req, res })

@@ -9,7 +9,7 @@ const func = ({ app, reporter }) => async(req, res) => {
 
   const { projectName } = req.vars
 
-  await doDocument({ app, projectName, req, res })
+  await doDocument({ app, projectName, reporter, req, res })
 }
 
 export {
