@@ -11,7 +11,7 @@ import {
   setupGitHubLabels,
   setupGitHubMilestones
 } from '@liquid-labs/github-toolkit'
-import { LIQ_HOME, LIQ_PLAYGROUND } from '@liquid-labs/liq-defaults'
+import { LIQ_PLAYGROUND } from '@liquid-labs/liq-defaults'
 import { getPackageOrgAndBasename } from '@liquid-labs/npm-toolkit'
 
 import { commonProjectSetupParameters } from './common-project-setup-parameters'
@@ -79,7 +79,7 @@ const doCreate = async({ reporter, req, res }) => {
     return failures.length === 0
   }
 
-  const stagingDir = `${LIQ_HOME()}/tmp/liq-core/project-staging/${newProjectName}`
+  const stagingDir = fsPath.join(app.ext.serverHome, 'tmp', 'liq-projects', 'new-project-staging', newProjectName)
   const qualifiedName = orgGithubName + '/' + basename
 
   try {
