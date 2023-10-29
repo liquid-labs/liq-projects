@@ -23,10 +23,7 @@ const doUpdate = async({ app, projectName, reporter, req, res }) => {
     return
   }
 
-  // const { updated, actions } = update({ dryRun, projectPath, projectName })
-  const result = await update({ dryRun, projectPath, projectName }) // DEBUG
-  console.log('result:', result) // DEBUG
-  const { updated, actions } = result // DEBUG
+  const { updated, actions } = update({ dryRun, projectPath, projectName })
 
   let msg = reporter.taskReport.join('\n')
     + '\n' + actions.join('\n')
