@@ -1,3 +1,5 @@
+import createError from 'http-errors'
+
 import { getPackageJSON } from '@liquid-labs/npm-toolkit'
 
 import { doPublish, getPublishEndpointParams } from './_lib/publish-lib'
@@ -14,7 +16,7 @@ const func = ({ app, cache, reporter }) => async(req, res) => {
     throw createError.BadRequest("Called 'projects releases publish' with implied work, but 'X-CWD' header not found.")
   }
 
-  const { name: projectName } = await getPackageJSON({ pkgDir: cwd })
+  const { name: projectName } = await getPackageJSON({ pkgDir : cwd })
 
   await doPublish({ app, cache, projectName, reporter, req, res })
 }
