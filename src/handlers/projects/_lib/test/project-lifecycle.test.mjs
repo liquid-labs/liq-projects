@@ -42,7 +42,7 @@ describe('project lifecyle', () => {
   const githubOwner = process.env.TEST_GITHUB_ORG || 'liquid-labs'
   const newProjectBasename = `test-project-${randKey}`
   const newProjectName = `@${newProjectOrg}/${newProjectBasename}`
-  const newProjectPath = fsPath.join(playgroundDir, ...(newProjectName.split('/')))
+  const newProjectPath = fsPath.join(playgroundDir, ...(newProjectName.slice(1).split('/')))
   const newPkgJSONPath = fsPath.join(newProjectPath, 'package.json')
 
   describe('create project', () => {
@@ -81,7 +81,7 @@ describe('project lifecyle', () => {
 
   // the rename section
   const renamedName = '@' + newProjectOrg + '/test-project-new-name-' + randKey
-  const renamedProjectPath = fsPath.join(playgroundDir, ...(renamedName.split('/')))
+  const renamedProjectPath = fsPath.join(playgroundDir, ...(renamedName.slice(1).split('/')))
   const renamedPkgJSONPath = fsPath.join(renamedProjectPath, 'package.json')
 
   describe('rename project', () => {

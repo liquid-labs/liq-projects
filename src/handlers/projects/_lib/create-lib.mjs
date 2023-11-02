@@ -21,16 +21,24 @@ const doCreate = async({ app, reporter, req, res }) => {
   const {
     description,
     license,
-    newProjectName,
     noCleanup,
     noFork = false,
     public : publicRepo = false,
+    retainLeadingAt,
     skipLabels,
     skipMilestones,
     version = DEFAULT_VERSION
   } = req.vars
 
+  let { newProjectName } = req.vars
+
+  // regularize to follow NPM convention of prepending org name with a '@'
+  if (!newProjectName.startsWith('@') && newProjectName.indexOf('/') !== -1) {
+    newProjectName = '@' + newProjectName
+  }
+
   let orgGithubName = req.vars.githubOwner
+  // note the 'nmpOrg' here does NOT start with tho '@'
   const { org: npmOrg, basename } = await getPackageOrgAndBasename({ pkgName : newProjectName })
   if (orgGithubName === undefined) {
     orgGithubName = npmOrg // comes out sans '@'
@@ -80,7 +88,7 @@ const doCreate = async({ app, reporter, req, res }) => {
   }
 
   const stagingDir = fsPath.join(app.ext.serverHome, 'tmp', 'liq-projects', 'new-project-staging', newProjectName)
-  const qualifiedName = orgGithubName + '/' + basename
+  const gitHubQualifiedName = orgGithubName + '/' + basename
 
   try {
   // set up the staging directory
@@ -111,7 +119,7 @@ const doCreate = async({ app, reporter, req, res }) => {
     const packagePath = stagingDir + '/package.json'
     const packageJSON = readFJSON(packagePath)
 
-    const repoFragment = 'github.com/' + qualifiedName
+    const repoFragment = 'github.com/' + gitHubQualifiedName
     const repoURL = `git+ssh://git@${repoFragment}.git`
     const bugsURL = `https://${repoFragment}/issues`
     const homepage = `https://${repoFragment}#readme`
@@ -134,32 +142,32 @@ const doCreate = async({ app, reporter, req, res }) => {
     const initCommitResult = shell.exec(`cd "${stagingDir}" && git add package.json && git commit -m "package initialization"`)
     if (initCommitResult.code !== 0) {
       await cleanup({
-        msg    : `Could not make initial project commit for '${qualifiedName}'.`,
+        msg    : `Could not make initial project commit for '${gitHubQualifiedName}'.`,
         res,
         status : 500
       })
       return
     }
-    reporter.push(`Initialized local repository for project '${qualifiedName}'.`)
+    reporter.push(`Initialized local repository for project '${gitHubQualifiedName}'.`)
 
     reporter.push(`Creating github repository for '${newProjectName}'...`)
     const creationOpts = '--remote-name origin'
     + ` -d "${description}"`
     + (publicRepo === true ? '' : ' --private')
-    const hubCreateResult = shell.exec(`cd "${stagingDir}" && hub create ${creationOpts} ${qualifiedName}`)
+    const hubCreateResult = shell.exec(`cd "${stagingDir}" && hub create ${creationOpts} ${gitHubQualifiedName}`)
     if (hubCreateResult.code !== 0) {
       await cleanup({
-        msg    : `There was an error initalizing the github repo '${qualifiedName}' (${hubCreateResult.code}):\n${hubCreateResult.stderr}`,
+        msg    : `There was an error initalizing the github repo '${gitHubQualifiedName}' (${hubCreateResult.code}):\n${hubCreateResult.stderr}`,
         res,
         status : 500
       })
       return
     }
-    reporter.push(`Created GitHub repo '${qualifiedName}'.`)
+    reporter.push(`Created GitHub repo '${gitHubQualifiedName}'.`)
 
     cleanupFuncs.githubRepo = [
       async() => {
-        const delResult = shell.exec(`hub delete -y ${qualifiedName}`)
+        const delResult = shell.exec(`hub delete -y ${gitHubQualifiedName}`)
         return delResult.code === 0
       },
       'delete GitHub repo'
@@ -182,15 +190,15 @@ const doCreate = async({ app, reporter, req, res }) => {
 
     if (publicRepo === true && noFork === false) {
       const forkResult = shell.exec('hub fork --remote-name workspace')
-      if (forkResult.code === 0) reporter.push(`Created personal workspace fork for '${qualifiedName}'.`)
+      if (forkResult.code === 0) reporter.push(`Created personal workspace fork for '${gitHubQualifiedName}'.`)
       else reporter.push('Failed to create personal workspace fork.')
     }
 
-    if (skipLabels !== true) await setupGitHubLabels({ projectFQN : qualifiedName, reporter })
+    if (skipLabels !== true) await setupGitHubLabels({ projectFQN : gitHubQualifiedName, reporter })
     if (skipMilestones !== true) {
       await setupGitHubMilestones({
         pkgJSON     : packageJSON,
-        projectFQN  : qualifiedName,
+        projectFQN  : gitHubQualifiedName,
         projectPath : stagingDir,
         reporter,
         unpublished : true
@@ -198,14 +206,14 @@ const doCreate = async({ app, reporter, req, res }) => {
     }
   }
   catch (e) {
-    await cleanup({ msg : `There was an error creating project '${qualifiedName}'; ${e.message}`, res, status : 500 })
+    await cleanup({ msg : `There was an error creating project '${gitHubQualifiedName}'; ${e.message}`, res, status : 500 })
     process.stderr.write(e.stack)
     return
   }
 
   const targetDirBits = [LIQ_PLAYGROUND()]
   if (npmOrg !== undefined) {
-    targetDirBits.push('@' + npmOrg)
+    targetDirBits.push((retainLeadingAt === true ? '@' : '') + npmOrg)
   }
   targetDirBits.push(basename)
   const targetDir = fsPath.join(...targetDirBits)
@@ -251,6 +259,11 @@ const getCreateEndpointParameters = ({ workDesc }) => {
       name        : 'public',
       isBoolean   : true,
       description : 'By default, project repositories are created private. If `public` is set to true, then the repository will be made public.'
+    },
+    {
+      name        : 'retainLeadingAt',
+      isBoolean   : true,
+      description : "By default the leading '@' is dropped from the project name when creating the local playground diroctery. E.g, '@liquid-labs/some-project' would be saved in '~/liquid-labs/some-project' by default. Setting 'retainLeadingAt' to true would save the new project in '@liquid-labs/some-project'."
     },
     {
       name          : 'version',
