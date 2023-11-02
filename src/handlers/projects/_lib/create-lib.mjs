@@ -21,7 +21,6 @@ const doCreate = async({ app, reporter, req, res }) => {
   const {
     description,
     license,
-    newProjectName,
     noCleanup,
     noFork = false,
     public : publicRepo = false,
@@ -30,6 +29,8 @@ const doCreate = async({ app, reporter, req, res }) => {
     skipMilestones,
     version = DEFAULT_VERSION
   } = req.vars
+
+  let { newProjectName } = req.vars
 
   // regularize to follow NPM convention of prepending org name with a '@'
   if (!newProjectName.startsWith('@') && newProjectName.indexOf('/') !== -1) {
@@ -212,7 +213,7 @@ const doCreate = async({ app, reporter, req, res }) => {
 
   const targetDirBits = [LIQ_PLAYGROUND()]
   if (npmOrg !== undefined) {
-    targetDirBits.push((retainLeadingAt === true ? '@' : '' ) + npmOrg)
+    targetDirBits.push((retainLeadingAt === true ? '@' : '') + npmOrg)
   }
   targetDirBits.push(basename)
   const targetDir = fsPath.join(...targetDirBits)

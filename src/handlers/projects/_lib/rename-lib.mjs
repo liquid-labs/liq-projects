@@ -60,7 +60,13 @@ const getRenameEndpointParameters = ({ workDesc }) => {
 const doRename = async({ app, projectName, reporter, req, res }) => {
   await checkGitHubAPIAccess({ reporter }) // throws on failure
 
-  const { newName, noRenameDir = false, noRenameGitHubProject = false } = req.vars
+  const { noRenameDir = false, noRenameGitHubProject = false } = req.vars
+  let { newName } = req.vars
+
+  // normalize name with leading '@' (unless base name package)
+  if (!newName.startsWith('@') && newName.indexOf('/')) {
+    newName = '@' + newName
+  }
 
   let pkgData
   let origLocale = true
@@ -100,7 +106,7 @@ const doRename = async({ app, projectName, reporter, req, res }) => {
   if (noRenameDir === true) reporter.push('Skipping dir rename per <code>noRenameDir<rst>.')
   else if (origLocale === false) reporter.push('Looks like dir ha already been renamed; skipping.')
   else {
-    const newProjectPath = fsPath.join(LIQ_PLAYGROUND(), newName)
+    const newProjectPath = fsPath.join(LIQ_PLAYGROUND(), newName.replace(/^@/, ''))
     reporter.push(`Moving project from <code>${projectPath}<rst> to <code>${newProjectPath}<rst>...`)
     await fs.rename(projectPath, newProjectPath)
     projectPath = newProjectPath
