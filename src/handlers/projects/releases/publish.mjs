@@ -1,8 +1,14 @@
 import { doPublish, getPublishEndpointParams } from './_lib/publish-lib'
 
-const { help, method, parameters } = getPublishEndpointParams({ workDesc : 'indicated' })
-
 const path = ['projects', ':projectName', 'releases', 'publish']
+
+const { help, method, parameters } = getPublishEndpointParams({
+  alternateTo : {
+    altId     : '/projects/releases/publish',
+    variation : 'explicitly name the project'
+  },
+  workDesc : 'named'
+})
 
 const func = ({ app, cache, model, reporter }) => async(req, res) => {
   const { projectName } = req.vars

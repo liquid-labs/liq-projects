@@ -16,8 +16,9 @@ import { getPackageData } from './get-package-data'
 /**
  * Provides common endpoint parameters for the document endpoints.
  */
-const getRenameEndpointParameters = ({ workDesc }) => {
+const getRenameEndpointParameters = ({ alternateTo, workDesc }) => {
   const help = {
+    alternateTo,
     name        : `Project rename (${workDesc})`,
     summary     : `Renames the ${workDesc} local and GitHub projects names and updates git configuration.`,
     description : `Renames the ${workDesc} local and GitHub projects names and updates git configuration. It is safe to make repeated calls and in the case of partial success, the process can be re-run is safe to repeat. By default, the process will do four things:

@@ -42,8 +42,9 @@ const doUpdate = async({ app, projectName, reporter, req, res }) => {
   httpSmartResponse({ msg, req, res })
 }
 
-const getUpdateEndpointParameters = ({ workDesc }) => {
+const getUpdateEndpointParameters = ({ alternateTo, workDesc }) => {
   const help = {
+    alternateTo,
     name        : `Project update (${workDesc})`,
     summary     : `Updates the ${workDesc} project.`,
     description : `Updates the ${workDesc} project.`

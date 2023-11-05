@@ -16,12 +16,13 @@ const doDetail = ({ app, projectName, req, res }) => {
 /**
  * Defines parameters for named and implied project detail endpoints.
  */
-const getDetailEndpointParameters = ({ workDesc }) => {
+const getDetailEndpointParameters = ({ alternateTo, workDesc }) => {
   const parameters = []
   Object.freeze(parameters)
 
   return {
     help : {
+      alternateTo,
       name        : `Project detail (${workDesc})`,
       summary     : `Details the ${workDesc} project.`,
       description : `Provides detailed information about the ${workDesc} project.`

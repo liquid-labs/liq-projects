@@ -59,8 +59,9 @@ const doSetup = async({ app, projectName, reporter, req, res }) => {
 /**
  * Defines the setup endpoint parameters for the named and implied project setup endpoints.
  */
-const getSetupEndpointParameters = ({ workDesc }) => {
+const getSetupEndpointParameters = ({ alternateTo, workDesc }) => {
   const help = {
+    alternateTo,
     name        : `Project setup (${workDesc})`,
     summary     : `Sets up the ${workDesc} project.`,
     description : `Sets up the ${workDesc} project with common configurations. This will:

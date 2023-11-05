@@ -3,7 +3,13 @@ import { doDetail, getDetailEndpointParameters } from './_lib/detail-lib'
 
 const path = ['projects', ':projectName', 'detail']
 
-const { help, method, parameters } = getDetailEndpointParameters({ workDesc : 'named' })
+const { help, method, parameters } = getDetailEndpointParameters({
+  alternateTo : {
+    altlId    : '/projects/detail',
+    variation : 'explicitly name the project'
+  },
+  workDesc : 'named'
+})
 
 const func = ({ app, reporter }) => async(req, res) => {
   reporter = reporter.isolate()

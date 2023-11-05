@@ -127,8 +127,9 @@ ${hljs.highlight(rawContent, { language : fileType }).value}
 /**
  * Provides common endpoint parameters for named and implied document endpoints.
  */
-const getDocumentEndpointParameters = ({ workDesc }) => {
+const getDocumentEndpointParameters = ({ alternateTo, workDesc }) => {
   const help = {
+    alternateTo,
     name        : `Project document (${workDesc})`,
     summary     : `Generates developer documents for the ${workDesc} project.`,
     description : `Locally generates developer documentation for the ${workDesc} project.`

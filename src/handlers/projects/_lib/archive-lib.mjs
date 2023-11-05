@@ -65,7 +65,7 @@ const doArchive = async({ app, projectName, reporter, res, req }) => {
 /**
  * Defines parameters for named and implied project archive endpoints.
  */
-const getArchiveEndpointParameters = ({ workDesc }) => {
+const getArchiveEndpointParameters = ({ alternateTo, workDesc }) => {
   const parameters = [
     {
       name        : 'keepLocal',
@@ -78,6 +78,7 @@ const getArchiveEndpointParameters = ({ workDesc }) => {
 
   return {
     help : {
+      alternateTo,
       name        : `Project archive (${workDesc})`,
       summary     : `Archives the ${workDesc} project.`,
       description : `Archives the repository associated with the ${workDesc} project on GitHub and deletes the local project. Use \`keepLocal\` to retain the local project.`
