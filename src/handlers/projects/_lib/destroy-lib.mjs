@@ -96,7 +96,7 @@ const doDestroy = async({ app, cache, projectName, reporter, req, res }) => {
 /**
  * Defines parameters for named and implied project destroy endpoints.
  */
-const getDestroyEndpointParameters = ({ workDesc }) => {
+const getDestroyEndpointParameters = ({ alternateTo, workDesc }) => {
   const parameters = [
     {
       name        : 'noCopy',
@@ -115,6 +115,7 @@ const getDestroyEndpointParameters = ({ workDesc }) => {
 
   return {
     help : {
+      alternateTo,
       name        : `Work destroy (${workDesc})`,
       summray     : `Deletes the ${workDesc} project repository on GitHub and locally.`,
       description : `Attempts to delete the ${workDesc} project repository on GitHub and delete the local copy as well. In order to better avoid accidental deletion, the \`confirmed\` parameter must be set to \`true\`. By default, a copy of the project is made in the system's tmp directory unless \`noCopy\` is specified. `

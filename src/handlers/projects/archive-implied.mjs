@@ -22,8 +22,8 @@ const func = ({ app, reporter }) => async(req, res) => {
 }
 
 export {
-  help,
   func,
+  help,
   method,
   parameters,
   path

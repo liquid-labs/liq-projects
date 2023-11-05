@@ -209,8 +209,9 @@ const doPublish = async({ app, cache, projectName, reporter, req, res }) => {
   httpSmartResponse({ msg, req, res })
 }
 
-const getPublishEndpointParams = ({ workDesc }) => {
+const getPublishEndpointParams = ({ alternateTo, workDesc }) => {
   const help = {
+    alternateTo,
     name        : `projects release prepare (${workDesc})`,
     summary     : 'Prepares and (usually) publish the project.',
     description : 'Prepares and typically publishes a project. Preparation involves bumping the version, checking and saving the QA results on a release branch. Because the work typically moves on, it is most common to publish at the same time'
