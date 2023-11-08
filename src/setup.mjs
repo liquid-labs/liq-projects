@@ -48,7 +48,7 @@ const installProjectPlugins = ({ app, model, reporter }) => {
 }
 */
 
-const projectNameReString = '^(?:@[a-zA-Z][a-zA-Z0-9-]*[/])?[a-zA-Z][a-zA-Z0-9-]*'
+const projectNameReString = '(?:(?:@|%40)[a-zA-Z][a-zA-Z0-9-]*(?:[/]|%2F|%2f))?[a-zA-Z][a-zA-Z0-9-]*'
 
 const setupPathResolvers = ({ app }) => {
   app.ext.pathResolvers.newProjectName = {

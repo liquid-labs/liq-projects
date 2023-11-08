@@ -2,6 +2,8 @@ import { handlers } from './releases'
 
 import * as archiveHandler from './archive'
 import * as archiveImpliedHandler from './archive-implied'
+import * as closeHandler from './close'
+import * as closeImpliedHandler from './close-implied'
 import * as createHandler from './create'
 import * as destroyHandler from './destroy'
 import * as destroyImpliedHandler from './destroy-implied'
@@ -19,6 +21,8 @@ import * as updateImpliedHandler from './update-implied'
 handlers.push(
   archiveHandler,
   archiveImpliedHandler,
+  closeHandler,
+  closeImpliedHandler,
   createHandler,
   destroyHandler,
   destroyImpliedHandler,
