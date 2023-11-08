@@ -46,7 +46,7 @@ const doArchive = async({ app, projectName, reporter, res, req }) => {
     try {
       reporter.push(`About to <em>delete<rst> local project at <code>${projectPath}<rst>...`)
       await app.ext._liqProjects.playgroundMonitor.close()
-      await fs.rm(projectPath, { force: true, recursive : true })
+      await fs.rm(projectPath, { force : true, recursive : true })
       reporter.push('  success.')
     }
     catch (e) {

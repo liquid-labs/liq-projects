@@ -18,12 +18,12 @@ const doClose = async({ app, projectName, reporter, req, res }) => {
   reporter.log(`Verify safe to delete local repo clone at ${projectPath}...`)
   verifyClean({ projectPath, reporter })
   const [origin, mainBranch] = verifyOnlyMainBranch({ projectPath, reporter })
-  verifyLocalChangesSaved({ branch: mainBranch, origin, projectPath, reporter })
+  verifyLocalChangesSaved({ branch : mainBranch, origin, projectPath, reporter })
   // if we get here, then it's safe to delete the local copy...
   reporter.log('Attempting to delete local copy...')
   try {
     await app.ext._liqProjects.playgroundMonitor.close()
-    await fs.rm(projectPath, { force: true, recursive: true })
+    await fs.rm(projectPath, { force : true, recursive : true })
   }
   finally {
     app.ext._liqProjects.playgroundMonitor.refreshProjects()
