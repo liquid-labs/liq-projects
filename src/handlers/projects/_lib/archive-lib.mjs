@@ -45,11 +45,15 @@ const doArchive = async({ app, projectName, reporter, res, req }) => {
   if (keepLocal !== true) {
     try {
       reporter.push(`About to <em>delete<rst> local project at <code>${projectPath}<rst>...`)
-      await fs.rm(projectPath, { recursive : true })
+      await app.ext._liqProjects.playgroundMonitor.close()
+      await fs.rm(projectPath, { force : true, recursive : true })
       reporter.push('  success.')
     }
     catch (e) {
-      throw createError.InternalServerError(`Project '${projectName}' was archived on GitHub, but there was an error removing the local project at '${projectPath}'. Check and address manually.`, { cause : e })
+      throw createError.InternalServerError(`Project '${projectName}' was archived on GitHub, but there was an error removing the local project at '${projectPath}' (${e.message}). Check and address manually.`, { cause : e })
+    }
+    finally {
+      await app.ext._liqProjects.playgroundMonitor.refreshProjects()
     }
   }
   else {

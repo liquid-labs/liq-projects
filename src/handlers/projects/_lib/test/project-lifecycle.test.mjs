@@ -131,11 +131,13 @@ describe('project lifecyle', () => {
         ext : {
           _liqProjects : {
             playgroundMonitor : {
+              close          : () => {},
               getProjectData : (project) => {
                 return project === renamedName
                   ? { pkgJSON, projectPath : renamedProjectPath }
                   : undefined
-              }
+              },
+              refreshProjects : () => {}
             }
           }, // _liqProjects
           credentialsDB
