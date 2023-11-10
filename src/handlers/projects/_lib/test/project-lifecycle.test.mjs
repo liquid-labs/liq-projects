@@ -95,8 +95,8 @@ describe('project lifecyle', () => {
 
       const appMock = {
         ext : {
-          credentialsDB: credDB,
-          _liqProjects : {
+          credentialsDB : credDB,
+          _liqProjects  : {
             playgroundMonitor : {
               getProjectData : (project) => {
                 return project === newProjectName
