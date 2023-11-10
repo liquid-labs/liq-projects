@@ -27,7 +27,9 @@ const getRenameEndpointParameters = ({ alternateTo, workDesc }) => {
 1. Rename the local project directory.
 2. Rename the GitHub project.
 3. Update the local repository origin remote URLs.
-4. Update the <code>package.json<rst> name, URLs, and <code>main<rst> (where applicable).`
+4. Update the <code>package.json<rst> name, URLs, and <code>main<rst> (where applicable).
+
+There may be additional steps needed to complete the renaming process.`
   }
 
   const method = 'post'
