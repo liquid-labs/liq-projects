@@ -90,8 +90,12 @@ describe('project lifecyle', () => {
 
       const pkgJSON = JSON.parse(await fs.readFile(newPkgJSONPath, { encoding : 'utf8' }))
 
+      const credDB = new CredentialsDB()
+      setupCredentials({ credentialsDB : credDB })
+
       const appMock = {
         ext : {
+          credentialsDB: credDB,
           _liqProjects : {
             playgroundMonitor : {
               getProjectData : (project) => {
