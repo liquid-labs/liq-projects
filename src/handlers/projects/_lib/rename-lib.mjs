@@ -9,6 +9,7 @@ import { checkGitHubAPIAccess } from '@liquid-labs/github-toolkit'
 import { httpSmartResponse } from '@liquid-labs/http-smart-response'
 import { LIQ_PLAYGROUND } from '@liquid-labs/liq-defaults'
 import { getPackageOrgAndBasename } from '@liquid-labs/npm-toolkit'
+import { Octocache } from '@liquid-labs/octocache'
 
 import { commonProjectPathParameters } from './common-project-path-parameters'
 import { getPackageData } from './get-package-data'
@@ -65,7 +66,7 @@ const doRename = async({ app, projectName, reporter, req, res }) => {
   let { newName } = req.vars
 
   // normalize name with leading '@' (unless base name package)
-  if (!newName.startsWith('@') && newName.indexOf('/')) {
+  if (!newName.startsWith('@') && newName.indexOf('/') !== -1) {
     newName = '@' + newName
   }
 
@@ -100,7 +101,9 @@ const doRename = async({ app, projectName, reporter, req, res }) => {
   // user may override the standard path v but usually won't
   let projectPath = req.vars.projectPath || pkgData.projectPath
   const { githubOrg, githubName, pkgJSON } = pkgData
+
   const { basename: newBasename/*, org: newOrg */ } = await getPackageOrgAndBasename({ pkgName : newName })
+  console.log('newBasename:', newBasename) // DEBUG
 
   const newGitHubName = githubOrg + '/' + newBasename
 
@@ -114,20 +117,26 @@ const doRename = async({ app, projectName, reporter, req, res }) => {
   }
   // note 'projectPath' now points to the new location, if moved
 
+  const credDB = app.ext.credentialsDB
+  const authToken = await credDB.getToken('GITHUB_API')
+
+  const octocache = new Octocache({ authToken })
+
   if (noRenameGitHubProject === true) {
     reporter.push('Skipping GitHub project rename per <code>noRenameGitHubProject<rst>.')
   }
   else {
-    const projCheckResult =
-      shell.exec(`hub api -H "Accept: application/vnd.github+json" /repos/${newGitHubName}`)
-    if (projCheckResult.code === 0) {
+    try {
+      await octocache.request(`GET /repos/${newGitHubName}`)
       reporter.push(`It appears '${githubName}' is already renamed in GitHub to '${newGitHubName}'.`)
     }
-    else {
-      reporter.push(`Updating GitHub project name from ${githubName} to ${newGitHubName}...`)
-      const renameResult = shell.exec(`hub api --method PATCH -H "Accept: application/vnd.github+json" /repos/${githubName} -f name='${newBasename}'`)
-      if (renameResult.code !== 0) {
-        throw new Error('There was a problem renaming the remote project name. Update manually.')
+    catch (e) {
+      if (e.status === 404) {
+        reporter.push(`Updating GitHub project name from ${githubName} to ${newGitHubName}...`)
+        await octocache.request(`PATCH /repos/${githubName}`, { name : newBasename })
+      }
+      else {
+        throw e
       }
     }
   }
