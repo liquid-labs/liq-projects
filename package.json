@@ -49,7 +49,6 @@
     "@liquid-labs/liq-credentials-db": "^1.0.0-alpha.7",
     "@liquid-labs/liq-defaults": "^1.0.0-alpha.2",
     "@liquid-labs/liq-handlers-lib": "^1.0.0-alpha.17",
-    "@liquid-labs/liq-policy-test-lib": "^1.0.0-alpha.5",
     "@liquid-labs/liq-projects-lib": "^1.0.0-alpha.11",
     "@liquid-labs/liq-qa-lib": "^1.0.0-alpha.9",
     "@liquid-labs/npm-toolkit": "^1.0.0-alpha.11",
