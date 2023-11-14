@@ -105,7 +105,6 @@ const doRename = async({ app, projectName, reporter, req, res }) => {
   const { githubOrg, githubName, pkgJSON } = pkgData
 
   const { basename: newBasename/*, org: newOrg */ } = await getPackageOrgAndBasename({ pkgName : newName })
-  console.log('newBasename:', newBasename) // DEBUG
 
   const newGitHubName = githubOrg + '/' + newBasename
 
