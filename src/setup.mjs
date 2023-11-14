@@ -3,7 +3,6 @@ import * as fs from 'node:fs/promises'
 import * as fsPath from 'node:path'
 
 import { setupCredentials } from '@liquid-labs/credentials-db-plugin-github'
-import { LIQ_PLAYGROUND } from '@liquid-labs/liq-defaults'
 import { PlaygroundMonitor } from '@liquid-labs/playground-monitor'
 
 const setup = async({ app, reporter }) => {
@@ -66,9 +65,9 @@ const setupPathResolvers = ({ app }) => {
 
 const setupPlayground = async({ app }) => {
   const playgroundPath = process.env.PLUGABLE_PLAYGROUND // TOOD: pull from plugable-defaults
-    || process.env.LIQ_PLAYGROUND 
+    || process.env.LIQ_PLAYGROUND
     || fsPath.join(process.env.HOME, 'playground')
-  await fs.mkdir(playgroundPath, { recursive: true })
+  await fs.mkdir(playgroundPath, { recursive : true })
   const playgroundMonitor = new PlaygroundMonitor({ root : playgroundPath })
   await playgroundMonitor.refreshProjects()
   // works wether or not app.ext._liqProjects is defined or not
