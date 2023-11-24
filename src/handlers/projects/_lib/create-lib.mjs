@@ -263,8 +263,8 @@ const getCreateEndpointParameters = ({ workDesc }) => {
       description : 'Suppresses default behavior of proactively creating workspace fork for public repos.'
     },
     {
-      name : 'orgKey',
-      decription: 'The org key to associate with the project. This is used primarily for unscoped projects, but may also be used to override the implied org key of scoped projects. (Note: support for the latter usage is not fully implemented at this time.' // TODO: see 'Note'
+      name       : 'orgKey',
+      decription : 'The org key to associate with the project. This is used primarily for unscoped projects, but may also be used to override the implied org key of scoped projects. (Note: support for the latter usage is not fully implemented at this time.' // TODO: see 'Note'
     },
     {
       name        : 'public',
