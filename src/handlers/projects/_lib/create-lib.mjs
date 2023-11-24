@@ -29,6 +29,7 @@ const doCreate = async({ app, reporter, req, res }) => {
     skipMilestones,
     version = DEFAULT_VERSION
   } = req.vars
+  let { orgKey } = req.vars
 
   let { newProjectName } = req.vars
 
@@ -126,14 +127,20 @@ const doCreate = async({ app, reporter, req, res }) => {
     const pkgLicense = license || DEFAULT_LICENSE
 
     packageJSON.name = newProjectName
+    if (description !== undefined) {
+      packageJSON.description = description
+    }
     packageJSON.main = `dist/${basename}.js`
     packageJSON.version = version
     packageJSON.repository = repoURL
     packageJSON.bugs = { url : bugsURL }
     packageJSON.homepage = homepage
     packageJSON.license = pkgLicense
-    if (description) {
-      packageJSON.description = description
+    if (orgKey !== undefined) {
+      if (!orgKey.startsWith('@')) {
+        orgKey = '@' + orgKey
+      }
+      packageJSON._plugable = { orgKey }
     }
 
     writeFJSON({ data : packageJSON, file : packagePath, noMeta : true })
@@ -254,6 +261,10 @@ const getCreateEndpointParameters = ({ workDesc }) => {
       name        : 'noFork',
       isBoolean   : true,
       description : 'Suppresses default behavior of proactively creating workspace fork for public repos.'
+    },
+    {
+      name : 'orgKey',
+      decription: 'The org key to associate with the project. This is used primarily for unscoped projects, but may also be used to override the implied org key of scoped projects. (Note: support for the latter usage is not fully implemented at this time.' // TODO: see 'Note'
     },
     {
       name        : 'public',
