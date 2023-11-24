@@ -15,7 +15,7 @@ const setup = async({ app, reporter }) => {
 /**
 * Our 'liq-projects' setup called when we are loaded as a 'liq-core' plugin. This setup in turns finds and loads our own
 * plugins.
-*//*
+*//* This may have been done before we had dependency runners?
 const installProjectPlugins = ({ app, model, reporter }) => {
   const pluginPkg = path.join(LIQ_HOME(), 'plugins', 'liq-projects', 'package.json')
   if (fs.statSync(pluginPkg, { throwIfNoEntry : false }) === undefined) {
