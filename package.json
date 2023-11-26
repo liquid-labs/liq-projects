@@ -51,10 +51,10 @@
     "@liquid-labs/liq-qa-lib": "^1.0.0-alpha.9",
     "@liquid-labs/npm-toolkit": "^1.0.0-alpha.11",
     "@liquid-labs/octocache": "^1.0.0-alpha.4",
-    "@liquid-labs/playground-monitor": "^1.0.0-beta.1",
+    "@liquid-labs/playground-monitor": "^1.0.0-beta.3",
     "@liquid-labs/semver-plus": "^1.0.0-alpha.8",
     "@liquid-labs/shell-toolkit": "^1.0.0-alpha.7",
-    "highlight.js": "^11.8.0",
+    "highlight.js": "^11.9.0",
     "http-errors": "^2.0.0",
     "natural-sort": "^1.0.0",
     "shelljs": "^0.8.5"

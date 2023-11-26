@@ -16,7 +16,7 @@ const func = ({ app, reporter }) => async(req, res) => {
 
   const { projectName } = req.vars
 
-  doDetail({ app, projectName, req, res })
+  await doDetail({ app, projectName, req, res })
 }
 
 export {

@@ -47,11 +47,11 @@ const doPublish = async({ app, cache, projectName, reporter, req, res }) => {
 
   const pkgData = await getPackageData({ app, projectName })
 
-  const { pkgJSON, projectPath } = pkgData
+  const { packageJSON, projectPath } = pkgData
   const [originRemote, mainBranch] = determineOriginAndMain({ projectPath, reporter })
 
-  // TODO: read from org settings if not defined in pkgJSON
-  const publishOnPrepare = pkgJSON?.liq?.PUBLISH_FROM || 'main-branch'
+  // TODO: read from org settings if not defined in packageJSON
+  const publishOnPrepare = packageJSON?.liq?.PUBLISH_FROM || 'main-branch'
 
   if (publishOnPrepare !== undefined && publishOnPrepare !== 'release-branch' && publishOnPrepare !== 'main-branch') {
     throw createError.BadRequest(`Invalid value for 'PUBLISH_FROM' '${publishOnPrepare}'; must be one of 'release-branch' or 'main-branch'.`)
@@ -62,7 +62,7 @@ const doPublish = async({ app, cache, projectName, reporter, req, res }) => {
   }
 
   // TODO: should be 'org.getSettings(`npm.${npmOrg}.OTP_REQUIRED`)' or similar.
-  if (releaseOnly !== true && otp === undefined && pkgJSON?.liq?.npm?.PUBLISH_OTP_REQUIRED === true) {
+  if (releaseOnly !== true && otp === undefined && packageJSON?.liq?.npm?.PUBLISH_OTP_REQUIRED === true) {
     const interrogationBundles = [
       {
         title   : 'One-time-password security verification',
@@ -80,7 +80,7 @@ const doPublish = async({ app, cache, projectName, reporter, req, res }) => {
     return
   }
 
-  const currVer = pkgJSON.version
+  const currVer = packageJSON.version
 
   if (releaseOnly === true) {
     const releaseMsg = await doRelease({
@@ -119,7 +119,7 @@ const doPublish = async({ app, cache, projectName, reporter, req, res }) => {
     dirtyOK,
     mainBranch,
     originRemote,
-    pkgJSON,
+    packageJSON,
     projectPath,
     releaseBranch,
     reporter
@@ -290,7 +290,7 @@ const verifyReadyForPublish = ({
   dirtyOK,
   mainBranch,
   originRemote,
-  pkgJSON,
+  packageJSON,
   projectPath,
   releaseBranch,
   reporter
@@ -307,7 +307,7 @@ const verifyReadyForPublish = ({
   runQA({
     msgFail     : 'Project must pass QA prior to release.',
     msgNoScript : "You must define a 'qa' script to be run prior to release.",
-    pkgJSON,
+    pkgJSON     : packageJSON,
     projectPath
   })
 }

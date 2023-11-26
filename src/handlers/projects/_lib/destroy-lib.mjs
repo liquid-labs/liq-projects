@@ -7,7 +7,7 @@ import createError from 'http-errors'
 
 import { checkGitHubAPIAccess } from '@liquid-labs/github-toolkit'
 import { httpSmartResponse } from '@liquid-labs/http-smart-response'
-import { getPackageOrgAndBasename } from '@liquid-labs/npm-toolkit'
+import { getPackageOrgBasenameAndVersion } from '@liquid-labs/npm-toolkit'
 import { Octocache } from '@liquid-labs/octocache'
 
 import { commonProjectPathParameters } from './common-project-path-parameters'
@@ -37,7 +37,7 @@ const doDestroy = async({ app, cache, projectName, reporter, req, res }) => {
     throw createError.BadRequest("It appears that the local project has been deleted already. In this case, the 'githubOwner' parameter is required.")
   }
   else {
-    const { basename } = await getPackageOrgAndBasename({ pkgName : projectName })
+    const { basename } = await getPackageOrgBasenameAndVersion({ pkgSpec : projectName })
     githubName = `${githubOwner}/${basename}`
   }
 
