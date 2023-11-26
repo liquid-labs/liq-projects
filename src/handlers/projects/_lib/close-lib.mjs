@@ -21,13 +21,7 @@ const doClose = async({ app, projectName, reporter, req, res }) => {
   verifyLocalChangesSaved({ branch : mainBranch, origin, projectPath, reporter })
   // if we get here, then it's safe to delete the local copy...
   reporter.log('Attempting to delete local copy...')
-  try {
-    await app.ext._liqProjects.playgroundMonitor.close()
-    await fs.rm(projectPath, { force : true, recursive : true })
-  }
-  finally {
-    app.ext._liqProjects.playgroundMonitor.refreshProjects()
-  }
+  await fs.rm(projectPath, { force : true, recursive : true })
 
   httpSmartResponse({ msg : `Closed local project '${projectName}'.`, req, res })
 }

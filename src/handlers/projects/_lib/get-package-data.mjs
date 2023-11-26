@@ -20,8 +20,8 @@ import { getGitHubOrgAndProjectBasename } from '@liquid-labs/github-toolkit'
  * - `projectPath`: the absolute path to the project on local disk
  */
 const getPackageData = async({ app, projectName, noThrow }) => {
-  const { pkgJSON, projectPath } = app.ext._liqProjects.playgroundMonitor.getProjectData(projectName) || {}
-  if (pkgJSON === undefined) {
+  const { packageJSON, projectPath } = await app.ext._liqProjects.playgroundMonitor.getProjectData(projectName) || {}
+  if (packageJSON === undefined) {
     if (noThrow === true) {
       return undefined
     }
@@ -31,14 +31,14 @@ const getPackageData = async({ app, projectName, noThrow }) => {
   }
   // else we have what looks like a project
 
-  const { org: githubOrg, projectBasename } = getGitHubOrgAndProjectBasename({ packageJSON : pkgJSON })
+  const { org: githubOrg, projectBasename } = getGitHubOrgAndProjectBasename({ packageJSON })
   const githubName = githubOrg + '/' + projectBasename
 
   return {
     githubBasename : projectBasename,
     githubName,
     githubOrg,
-    pkgJSON,
+    packageJSON,
     projectPath
   }
 }

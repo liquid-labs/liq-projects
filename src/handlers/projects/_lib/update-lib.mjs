@@ -17,8 +17,8 @@ const parameters = [
 const doUpdate = async({ app, projectName, reporter, req, res }) => {
   const { dryRun } = req.vars
 
-  const { projectPath } = app.ext._liqProjects.playgroundMonitor.getProjectData(projectName)
-  if (!fs.existsSync(projectPath)) {
+  const { projectPath } = await app.ext._liqProjects.playgroundMonitor.getProjectData(projectName) || {}
+  if (projectpath === undefined) {
     res.status(404).json({ message : `Did not find expected local checkout for project '${projectName}'.` })
     return
   }

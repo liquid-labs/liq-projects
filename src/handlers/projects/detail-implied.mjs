@@ -19,7 +19,7 @@ const func = ({ app, reporter }) => async(req, res) => {
 
   const { name: projectName } = await getPackageJSON({ pkgDir : cwd })
 
-  doDetail({ app, projectName, req, res })
+  await doDetail({ app, projectName, req, res })
 }
 
 export {
