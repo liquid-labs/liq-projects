@@ -1,5 +1,3 @@
-import * as fs from 'fs'
-
 import { httpSmartResponse } from '@liquid-labs/http-smart-response'
 import { update } from '@liquid-labs/npm-toolkit'
 
@@ -18,7 +16,7 @@ const doUpdate = async({ app, projectName, reporter, req, res }) => {
   const { dryRun } = req.vars
 
   const { projectPath } = await app.ext._liqProjects.playgroundMonitor.getProjectData(projectName) || {}
-  if (projectpath === undefined) {
+  if (projectPath === undefined) {
     res.status(404).json({ message : `Did not find expected local checkout for project '${projectName}'.` })
     return
   }

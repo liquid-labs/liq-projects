@@ -12,7 +12,7 @@ import {
   setupGitHubMilestones
 } from '@liquid-labs/github-toolkit'
 import { LIQ_PLAYGROUND } from '@liquid-labs/liq-defaults'
-import { getPackageOrgAndBasename } from '@liquid-labs/npm-toolkit'
+import { getPackageOrgBasenameAndVersion } from '@liquid-labs/npm-toolkit'
 
 import { commonProjectSetupParameters } from './common-project-setup-parameters'
 import { DEFAULT_LICENSE, DEFAULT_VERSION } from './common-constants'
@@ -40,7 +40,7 @@ const doCreate = async({ app, reporter, req, res }) => {
 
   let orgGithubName = req.vars.githubOwner
   // note the 'nmpOrg' here does NOT start with tho '@'
-  const { org: npmOrg, basename } = await getPackageOrgAndBasename({ pkgName : newProjectName })
+  const { org: npmOrg, basename } = await getPackageOrgBasenameAndVersion({ pkgSpec : newProjectName })
   if (orgGithubName === undefined) {
     orgGithubName = npmOrg // comes out sans '@'
   // TODO: check that we can access this org or something

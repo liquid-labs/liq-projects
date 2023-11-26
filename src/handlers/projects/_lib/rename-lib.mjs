@@ -8,7 +8,7 @@ import { determineOriginAndMain } from '@liquid-labs/git-toolkit'
 import { checkGitHubAPIAccess } from '@liquid-labs/github-toolkit'
 import { httpSmartResponse } from '@liquid-labs/http-smart-response'
 import { LIQ_PLAYGROUND } from '@liquid-labs/liq-defaults'
-import { getPackageOrgAndBasename } from '@liquid-labs/npm-toolkit'
+import { getPackageOrgBasenameAndVersion } from '@liquid-labs/npm-toolkit'
 import { Octocache } from '@liquid-labs/octocache'
 
 import { commonProjectPathParameters } from './common-project-path-parameters'
@@ -93,7 +93,7 @@ const doRename = async({ app, projectName, reporter, req, res }) => {
     }
     catch (e) {
       if (e.statusCode === 404) {
-        throw createError.NotFound(`Could not find package at under default locations for either original ('${projectName}') or new ('${newName}') name.`, { cause : e })
+        throw createError.NotFound(`Could not find package at default locations for either original ('${projectName}') or new ('${newName}') name.`, { cause : e })
       }
       else throw e
     }
@@ -104,7 +104,7 @@ const doRename = async({ app, projectName, reporter, req, res }) => {
   let projectPath = req.vars.projectPath || pkgData.projectPath
   const { githubOrg, githubName, packageJSON } = pkgData
 
-  const { basename: newBasename/*, org: newOrg */ } = await getPackageOrgAndBasename({ pkgName : newName })
+  const { basename: newBasename/*, org: newOrg */ } = await getPackageOrgBasenameAndVersion({ pkgSpec : newName })
 
   const newGitHubName = githubOrg + '/' + newBasename
 

@@ -307,7 +307,7 @@ const verifyReadyForPublish = ({
   runQA({
     msgFail     : 'Project must pass QA prior to release.',
     msgNoScript : "You must define a 'qa' script to be run prior to release.",
-    pkgJSON: packageJSON,
+    pkgJSON     : packageJSON,
     projectPath
   })
 }

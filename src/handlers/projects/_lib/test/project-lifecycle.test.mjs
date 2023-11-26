@@ -14,9 +14,13 @@ import { doCreate } from '../create-lib'
 import { doDestroy } from '../destroy-lib'
 import { doRename } from '../rename-lib'
 
+process.env.LIQ_CREDENTIALS_DB_PATH = fsPath.join(process.env.HOME, '.config', 'comply-server', 'credentials', 'db.yaml')
+console.log('LIQ_CREDENTIALS_DB_PATH:', process.env.LIQ_CREDENTIALS_DB_PATH) // DEBUG
+
 describe('project lifecyle', () => {
   const randKey = Math.round(Math.random() * 100000000000000000000)
   const playgroundDir = fsPath.join(os.tmpdir(), 'liq-projects-test-' + randKey)
+  console.log('playgroundDir:', playgroundDir) // DEBUG
   process.env.LIQ_PLAYGROUND = playgroundDir
 
   const reporterMock = {
@@ -64,8 +68,8 @@ describe('project lifecyle', () => {
 
     test('creates a local repository in the playground', async() => {
       const pkgContents = await fs.readFile(newPkgJSONPath, { encoding : 'utf8' })
-      const pkgJSON = JSON.parse(pkgContents)
-      expect(pkgJSON.name).toBe(newProjectName)
+      const packageJSON = JSON.parse(pkgContents)
+      expect(packageJSON.name).toBe(newProjectName)
     })
 
     test('creates a repo on GitHub', async() => {
@@ -88,7 +92,7 @@ describe('project lifecyle', () => {
     beforeAll(async() => {
       const reqMock = { vars : { newName : renamedName }, accepts : () => 'application/json' }
 
-      const pkgJSON = JSON.parse(await fs.readFile(newPkgJSONPath, { encoding : 'utf8' }))
+      const packageJSON = JSON.parse(await fs.readFile(newPkgJSONPath, { encoding : 'utf8' }))
 
       const credDB = new CredentialsDB()
       setupCredentials({ credentialsDB : credDB })
@@ -96,11 +100,12 @@ describe('project lifecyle', () => {
       const appMock = {
         ext : {
           credentialsDB : credDB,
+          serverHome    : playgroundDir,
           _liqProjects  : {
             playgroundMonitor : {
-              getProjectData : (project) => {
+              getProjectData : async(project) => {
                 return project === newProjectName
-                  ? { pkgJSON, projectPath : newProjectPath }
+                  ? { packageJSON, projectPath : newProjectPath }
                   : undefined
               }
             }
@@ -126,7 +131,7 @@ describe('project lifecyle', () => {
 
       const reqMock = { vars : { }, accepts : () => 'application/json' }
 
-      const pkgJSON = JSON.parse(await fs.readFile(renamedPkgJSONPath, { encoding : 'utf8' }))
+      const packageJSON = JSON.parse(await fs.readFile(renamedPkgJSONPath, { encoding : 'utf8' }))
 
       const credentialsDB = new CredentialsDB()
       setupCredentials({ credentialsDB })
@@ -138,7 +143,7 @@ describe('project lifecyle', () => {
               close          : () => {},
               getProjectData : (project) => {
                 return project === renamedName
-                  ? { pkgJSON, projectPath : renamedProjectPath }
+                  ? { packageJSON, projectPath : renamedProjectPath }
                   : undefined
               },
               refreshProjects : () => {}
