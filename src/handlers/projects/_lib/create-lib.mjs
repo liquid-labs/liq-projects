@@ -11,7 +11,6 @@ import {
   setupGitHubLabels,
   setupGitHubMilestones
 } from '@liquid-labs/github-toolkit'
-import { LIQ_PLAYGROUND } from '@liquid-labs/liq-defaults'
 import { getPackageOrgBasenameAndVersion } from '@liquid-labs/npm-toolkit'
 
 import { commonProjectSetupParameters } from './common-project-setup-parameters'
@@ -218,7 +217,7 @@ const doCreate = async({ app, reporter, req, res }) => {
     return
   }
 
-  const targetDirBits = [LIQ_PLAYGROUND()]
+  const targetDirBits = [app.ext._liqProjects.playgroundPath]
   if (npmOrg !== undefined) {
     targetDirBits.push((retainLeadingAt === true ? '@' : '') + npmOrg)
   }

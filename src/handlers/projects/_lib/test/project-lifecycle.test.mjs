@@ -20,7 +20,6 @@ process.env.LIQ_CREDENTIALS_DB_PATH =
 describe('project lifecyle', () => {
   const randKey = Math.round(Math.random() * 100000000000000000000)
   const playgroundDir = fsPath.join(os.tmpdir(), 'liq-projects-test-' + randKey)
-  process.env.LIQ_PLAYGROUND = playgroundDir
 
   const reporterMock = {
     log        : () => {},
