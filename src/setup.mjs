@@ -68,10 +68,9 @@ const setupPlayground = async({ app }) => {
     || process.env.LIQ_PLAYGROUND
     || fsPath.join(process.env.HOME, 'playground')
   await fs.mkdir(playgroundPath, { recursive : true })
-  console.log('PlaygroundMonitor root:', playgroundPath) // DEBUG
   const playgroundMonitor = new PlaygroundMonitor({ root : playgroundPath })
   // works wether or not app.ext._liqProjects is defined or not
-  app.ext._liqProjects = Object.assign({}, app.ext._liqProjects, { playgroundMonitor })
+  app.ext._liqProjects = Object.assign({}, app.ext._liqProjects, { playgroundMonitor, playgroundPath })
 }
 
 export { setup }

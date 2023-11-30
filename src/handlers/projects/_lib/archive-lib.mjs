@@ -34,7 +34,7 @@ const doArchive = async({ app, projectName, reporter, res, req }) => {
 
   const octocache = new Octocache({ authToken })
   try {
-    reporter.push(`About to achive ${githubName} on GitHub...`)
+    reporter.push(`About to archive ${githubName} on GitHub...`)
     await octocache.request(`PATCH /repos/${githubName}`, { archived : true })
     reporter.push('  success.')
   }
