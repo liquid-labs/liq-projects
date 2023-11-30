@@ -14,13 +14,12 @@ import { doCreate } from '../create-lib'
 import { doDestroy } from '../destroy-lib'
 import { doRename } from '../rename-lib'
 
-process.env.LIQ_CREDENTIALS_DB_PATH = fsPath.join(process.env.HOME, '.config', 'comply-server', 'credentials', 'db.yaml')
-console.log('LIQ_CREDENTIALS_DB_PATH:', process.env.LIQ_CREDENTIALS_DB_PATH) // DEBUG
+process.env.LIQ_CREDENTIALS_DB_PATH =
+  fsPath.join(process.env.HOME, '.config', 'comply-server', 'credentials', 'db.yaml')
 
 describe('project lifecyle', () => {
   const randKey = Math.round(Math.random() * 100000000000000000000)
   const playgroundDir = fsPath.join(os.tmpdir(), 'liq-projects-test-' + randKey)
-  console.log('playgroundDir:', playgroundDir) // DEBUG
   process.env.LIQ_PLAYGROUND = playgroundDir
 
   const reporterMock = {
@@ -59,7 +58,10 @@ describe('project lifecyle', () => {
 
       const appMock = {
         ext : {
-          serverHome : playgroundDir
+          serverHome   : playgroundDir,
+          _liqProjects : {
+            playgroundPath : playgroundDir
+          }
         }
       }
 
@@ -108,7 +110,8 @@ describe('project lifecyle', () => {
                   ? { packageJSON, projectPath : newProjectPath }
                   : undefined
               }
-            }
+            },
+            playgroundPath : playgroundDir
           }
         }
       }
@@ -147,7 +150,8 @@ describe('project lifecyle', () => {
                   : undefined
               },
               refreshProjects : () => {}
-            }
+            },
+            playgroundPath : playgroundDir
           }, // _liqProjects
           credentialsDB
         }
@@ -182,7 +186,8 @@ describe('project lifecyle', () => {
           _liqProjects : {
             playgroundMonitor : {
               getProjectData : () => {}
-            }
+            },
+            playgroundPath : playgroundDir
           }, // _liqProjects
           credentialsDB
         }

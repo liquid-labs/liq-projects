@@ -7,7 +7,6 @@ import shell from 'shelljs'
 import { determineOriginAndMain } from '@liquid-labs/git-toolkit'
 import { checkGitHubAPIAccess } from '@liquid-labs/github-toolkit'
 import { httpSmartResponse } from '@liquid-labs/http-smart-response'
-import { LIQ_PLAYGROUND } from '@liquid-labs/liq-defaults'
 import { getPackageOrgBasenameAndVersion } from '@liquid-labs/npm-toolkit'
 import { Octocache } from '@liquid-labs/octocache'
 
@@ -111,7 +110,7 @@ const doRename = async({ app, projectName, reporter, req, res }) => {
   if (noRenameDir === true) reporter.push('Skipping dir rename per <code>noRenameDir<rst>.')
   else if (origLocale === false) reporter.push('Looks like dir ha already been renamed; skipping.')
   else {
-    const newProjectPath = fsPath.join(LIQ_PLAYGROUND(), newName.replace(/^@/, ''))
+    const newProjectPath = fsPath.join(app.ext._liqProjects.playgroundPath, newName.replace(/^@/, ''))
     reporter.push(`Moving project from <code>${projectPath}<rst> to <code>${newProjectPath}<rst>...`)
     await fs.rename(projectPath, newProjectPath)
     projectPath = newProjectPath
