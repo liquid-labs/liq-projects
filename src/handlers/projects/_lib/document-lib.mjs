@@ -20,7 +20,7 @@ const doDocument = async({ app, projectName, reporter, req, res }) => {
   const { projectPath } = pkgData
 
   const pkgSrc = fsPath.join(projectPath, 'src')
-  const docPath = fsPath.join(projectPath, 'docs')
+  const docPath = fsPath.join(projectPath, 'docs', 'devref')
 
   reporter.log(`Building docs from ${pkgSrc}...`)
 
