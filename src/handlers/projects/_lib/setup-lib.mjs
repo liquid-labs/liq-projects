@@ -34,7 +34,7 @@ const doSetup = async({ app, projectName, reporter, req, res }) => {
     unpublished = false
   } = req.vars
 
-  const { githubName: projectFQN, pkgJSON, projectPath: pp } = getPackageData({ app, projectName })
+  const { githubName: projectFQN, pkgJSON, projectPath: pp } = await getPackageData({ app, projectName })
   const projectPath = req.vars.projectPath || pp
 
   const localMain = determineLocalMain({ projectPath })
