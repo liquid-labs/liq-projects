@@ -10,7 +10,7 @@ import {
 import { httpSmartResponse } from '@liquid-labs/http-smart-response'
 import { cleanupQAFiles, runQA, saveQAFiles } from '@liquid-labs/liq-qa-lib'
 import { tryExec } from '@liquid-labs/shell-toolkit'
-import * as version from '@liquid-labs/semver-plus'
+import * as semver from '@liquid-labs/semver-plus'
 
 import { doRelease } from './do-release'
 import { commonProjectPathParameters } from '../../_lib/common-project-path-parameters'
@@ -108,7 +108,7 @@ const doPublish = async({ app, cache, projectName, reporter, req, res }) => {
     nextVer = currentBranch.replace(/^release-([0-9.]+(?:-(?:alpha|beta|rc)\.\d+)?)-.+$/, '$1')
   }
   else {
-    nextVer = version.nextVersion({ currVer, increment })
+    nextVer = semver.nextVersion({ currVer, increment })
   }
 
   const releaseBranch = releaseBranchName({ releaseVersion : nextVer })
@@ -227,8 +227,8 @@ const getPublishEndpointParams = ({ alternateTo, workDesc }) => {
     {
       name           : 'increment',
       description    : 'Indicates how to increment the version for this release.',
-      matcher        : new RegExp(`^(?:${version.increments.join('|')})$`),
-      optionsFetcher : () => version.increments
+      matcher        : new RegExp(`^(?:${semver.STANDARD_INCREMENTS.join('|')})$`),
+      optionsFetcher : () => semver.STANDARD_INCREMENTS
     },
     {
       name        : 'name',
